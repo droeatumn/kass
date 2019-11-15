@@ -1,2 +1,3 @@
 # kass
-KIR assembly for CCS reads
+KIR assembly for CCS reads.
+Coming soon.
