@@ -10,11 +10,11 @@ configuration (e.g., $HOME/.nextflow/config). Make sure Docker is running
 and you are logged in to Docker Hub.
 
 <h2>Structural analysis</h2>
-KPI can be used to determine the presence/absence of genes and haplotype pairs: https://github.com/droeatumn/kpi
+KPI can be used to determine the presence/absence of genes and haplotype pairs from the raw data: https://github.com/droeatumn/kpi
 
 <h2>Assembly</h2>
 <b>Input</b>
-The input is a directory containing one or more compressed fastq files, each representing one individual. Each file is from PacBio HiFi 99.9% consensus sequences.
+The input is a directory containing one or more compressed fastq files, each representing one individual. Each file is from PacBio HiFi 99.9% consensus sequences.<br>
 
 <b>Output</b>
 Each input file has a correspoding output file (contigs.fasta)  with the assembled contigs.
@@ -36,14 +36,15 @@ The input is a directory containing a reference sequence in a fasta file along w
 
 <b>Output</b> <br>
 Index files are output for the reference fasta.<br>
-For each non-reference input file, a sorted bam file, its index, and the unaligned reads are output. Also, Qualimap (qualimap.pdf) and NanoPlot (NanoPlot-report.html) reports are generated for the alignment and a FastQC report (*fastqc.html) is generated if the input is a fastq file.
+For each non-reference input file, a sorted bam file, its index, and the unaligned reads are output. Also, Qualimap (qualimap.pdf) and NanoPlot (NanoPlot-report.html) reports are generated for the alignment and a FastQC report (fastqc.html) is generated if the input is a fastq file.
 
 <b>Running</b><br>
-Replace 'inDir' with the path to the input files. Replace 'outDir' with the path where the output files should be placed. Replace 'threadNum' with the maximum number of threads to use. Replace 'refFasta' with the name of the reference fasta file that is located in the input directory.
+Use the 'base' argument to indicate the path to where kass was cloned from
+GitHub, 'raw' to indicate the input directory, and 'output' to indicate the directory to put the output. Use 'refFasta' to indicate the name of the reference fasta file that is located in the input directory. Use 'threadNum' to optionally set maximum number of threads to use.
 
-<code>    align.nf --raw inDir --reference refFasta --threads threadNum</code>
+<code>    align.nf --base cloneDir --raw inDir --reference refFasta --output outDir --threads threadNum</code><br>
 e.g.,
-<code>    align.nf --raw ~/input --reference KP420442.fasta --threads 12</code>
+<code>    align.nf --raw ~/input --reference KP420442.fasta --output ~/output --threads 12</code>
 
 
 <h2>Bundled references</h2>
