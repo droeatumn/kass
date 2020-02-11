@@ -21,10 +21,6 @@ GitHub, 'raw' to indicate the input directory, and 'output' to indicate the dire
 <code>    ./main.nf --base cloneDir --raw inDir --output outDir</code><br>
 e.g.,
 <code>    ./main.nf --base ~/git/kass --raw ~/input --output ~/output</code>
-<b>Miscellaneous</b><br>
-Hardware<br>
-Minimum recommended hardware is 10G memory and 8 cores. More of each helps.
-Run time is 1-2 hours per ID, depending on platform, genotype variation, and parallel execution.
 
 <h2>Miscellaneous</h2>
 Hardware<br>
