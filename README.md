@@ -52,6 +52,6 @@ Some references and their indexes are bundled in input/references/.
 KP420439 and KP420442 are cA01&tilde;tA01. KP420440 is cB01&tilde;tB01.
 
 <h2>Miscellaneous</h2>
-Hardware<br>
+<b>Hardware</b><br>
 Minimum recommended hardware is 10G memory and 8 cores. More of each helps.
 Run time is 1-2 hours per ID, depending on platform, genotype variation, and parallel execution.
