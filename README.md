@@ -28,7 +28,7 @@ e.g.,
 <code>    ./main.nf --base ~/git/kass --raw ~/input --output ~/output</code>
 
 The image contains an example: a cA01&tilde;tA01 homozygous individual (GenBank accession KP420442). <br>
-<code>    ./main.nf --base ~/git/kass --raw ~/git/kass/input/example1 --output ~/output</code>
+<code>    ./main.nf --base cloneDir --raw ~/git/kass/input/example1 --output outDir</code>
 
 <h2>Alignment</h2>
 <b>Input</b>
