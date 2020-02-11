@@ -1,11 +1,16 @@
 # kass
-main.nf assembles KIR haplotypes from PacBio HiFi reads
+main.nf assembles KIR haplotypes from PacBio HiFi reads.<br>
 align.nf aligns and reports on the raw and/or assembled sequences.
 
 <h2>Dependancies</h2>
 Install Nextflow, Docker, and Git.
 Create accounts in GitHub and Docker Hub.
-Add 'docker.enabled = true' and 'docker.fixOwnership = true' to your Nexflow configuration (e.g., $HOME/.nextflow/config). Make sure Docker is running.
+Add 'docker.enabled = true' and 'docker.fixOwnership = true' to your Nexflow
+configuration (e.g., $HOME/.nextflow/config). Make sure Docker is running
+and you are logged in to Docker Hub.
+
+<h2>Structural analysis</h2>
+KPI can be used to determine the presence/absence of genes and haplotype pairs: https://github.com/droeatumn/kpi
 
 <h2>Assembly</h2>
 <b>Input</b>
@@ -24,6 +29,22 @@ e.g.,
 
 The image contains an example: a cA01&tilde;tA01 homozygous individual (GenBank accession KP420442). <br>
 <code>    ./main.nf --base ~/git/kass --raw ~/git/kass/input/example1 --output ~/output</code>
+
+<h2>Alignment</h2>
+<b>Input</b>
+The input is a directory containing a reference sequence in a fasta file along with one or more fasta/fastq files to be aligned to that reference.
+
+<b>Output</b> <br>
+Index files are output for the reference fasta.<br>
+For each non-reference input file, a sorted bam file, its index, and the unaligned reads are output. Also, Qualimap (qualimap.pdf) and NanoPlot (NanoPlot-report.html) reports are generated for the alignment and a FastQC report (*fastqc.html) is generated if the input is a fastq file.
+
+<b>Running</b><br>
+Replace 'inDir' with the path to the input files. Replace 'outDir' with the path where the output files should be placed. Replace 'threadNum' with the maximum number of threads to use. Replace 'refFasta' with the name of the reference fasta file that is located in the input directory.
+
+<code>    align.nf --raw inDir --reference refFasta --threads threadNum</code>
+e.g.,
+<code>    align.nf --raw ~/input --reference KP420442.fasta --threads 12</code>
+
 
 <h2>Bundled references</h2>
 Some references and their indexes are bundled in input/references/. 
