@@ -25,6 +25,10 @@ e.g.,
 The image contains an example: a cA01&tilde;tA01 homozygous individual (GenBank accession KP420442). <br>
 <code>    ./main.nf --base ~/git/kass --raw ~/git/kass/input/example1 --output ~/output</code>
 
+<h2>Bundled references</h2>
+Some references and their indexes are bundled in input/references/. 
+KP420439 and KP420442 are cA01&tilde;tA01. KP420440 is cB01&tilde;tB01.
+
 <h2>Miscellaneous</h2>
 Hardware<br>
 Minimum recommended hardware is 10G memory and 8 cores. More of each helps.
