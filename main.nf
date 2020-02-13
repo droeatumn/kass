@@ -11,22 +11,23 @@
 
 // things that may change per run
 // here are the FASTA/Q files
-params.base = '/opt/kass/'
+params.base = baseDir
 base = params.base + "/"
-params.raw = base + 'raw/'
+params.raw = base + "raw/"
 raw = params.raw + "/"
-params.output = base + 'output/'
+params.output = base + "output/"
 output = params.output + "/"
-fqNameSuffix = 'fastq.gz'          // extension on the file name
-params.canuPB1 = '-pacbio-corrected'
-params.canuPB2 = '-pacbio-corrected'
+fqNameSuffix = "fastq.gz"          // extension on the file name (todo: expand this)
+params.canuPB1 = "-pacbio-corrected"
+params.canuPB2 = "-pacbio-corrected"
 
-// things that probably won't change per run
-fqPath = raw + '*' + fqNameSuffix
-markerFile =  file('input/markers.fasta') // gene markers
-markerCapFile = file('input/markers_wCap.fasta') // gene markers + capture probes
-haps = base + 'input/HapSet23_v1.txt'
-maxMem = '24g'
+// things that probably won"t change per run
+fqPath = raw + "*" + fqNameSuffix
+markerFile = file("${baseDir}/input/markers.fasta") // gene markers
+markerCapFile = file("${baseDir}/input/markers_wCap.fasta") // gene markers + capture probes
+haps = base + "${baseDir}/input/HapSet23_v1.txt"
+maxMem = "24g"
+params.container = "droeatumn/kass:latest"
 
 fqs = Channel.fromPath(fqPath).ifEmpty { error "cannot find any files matching ${fqPath}" }.map { path -> tuple(sample(path), path) }
 
