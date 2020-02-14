@@ -3,7 +3,7 @@ main.nf assembles KIR haplotypes from PacBio HiFi reads.<br>
 align.nf aligns and reports on the raw and/or assembled sequences.
 
 <h2>Dependancies</h2>
-Install Nextflow, Docker, and Git.
+Install Java, Groovy, Nextflow, Docker, and Git.
 Create accounts in GitHub and Docker Hub.
 Add 'docker.enabled = true' and 'docker.fixOwnership = true' to your Nexflow
 configuration (e.g., $HOME/.nextflow/config). Make sure Docker is running
@@ -18,7 +18,7 @@ The input is a directory containing one or more compressed fastq files, each rep
 <br>
 <b>Output</b>
 Each input file has a correspoding output file (contigs.fasta)  with the assembled contigs.
-
+<br>
 <b>Running</b>
 Use the argument 'raw' to indicate the input directory, and 'output' to indicate the directory to put the output.
 
@@ -32,7 +32,7 @@ The image contains an example: a cA01&tilde;tA01 homozygous individual (GenBank 
 <h2>Alignment</h2>
 <b>Input</b>
 The input is a directory containing a reference sequence in a fasta file along with one or more fasta/fastq files to be aligned to that reference.<br>
-
+<br>
 <b>Output</b> <br>
 Index files are output for the reference fasta.<br>
 For each non-reference input file, a sorted bam file, its index, and the unaligned reads are output. Also, Qualimap (qualimap.pdf) and NanoPlot (NanoPlot-report.html) reports are generated for the alignment and a FastQC report (fastqc.html) is generated if the input is a fastq file.
