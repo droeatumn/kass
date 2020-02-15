@@ -17,6 +17,7 @@ params.raw = base + "raw/"
 raw = params.raw + "/"
 params.output = base + "output/"
 output = params.output + "/"
+params.off = null
 fqNameSuffix = "fastq.gz"          // extension on the file name (todo: expand this)
 params.canuPB1 = "-pacbio-corrected"
 params.canuPB2 = "-pacbio-corrected"
@@ -49,10 +50,14 @@ process extract {
   output:
 	set s, file{"*_kir.fastq"} into kirFastqs
     set s, file{"*_off-kir.fastq.gz"} into offkirFastqs
-	
+
+    offStr = "out=${s}_off-kir.fastq"
+    if(params.off == null) {
+        offStr = ""
+    }
 	// todo: take out rname
     """
-    bbduk.sh in=${fa} out=${s}_off-kir.fastq outm=${s}_kir.fastq ref=${markerCapFile} k=25 maskmiddle=f overwrite=t rename=t nzo=t rcomp=t ignorebadquality=t -Xmx${maxMem}
+    bbduk.sh in=${fa} ${offStr} outm=${s}_kir.fastq ref=${markerCapFile} k=25 maskmiddle=f overwrite=t rename=t nzo=t rcomp=t ignorebadquality=t -Xmx${maxMem}
     find . -type f -size 0 -print0 |xargs -0 rm -f
     #gzip ${s}_kir.fastq
     gzip ${s}_off-kir.fastq
