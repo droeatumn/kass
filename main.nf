@@ -6,7 +6,7 @@
  * Requires 'docker.enabled = true' in Nexflow configuration (e.g., $HOME/.nextflow/config).
  * 
  * @author Dave Roe
- * @todo don't want to output off-kir for WGS
+ *
  */
 
 // things that may change per run
@@ -17,7 +17,7 @@ params.raw = base + "raw/"
 raw = params.raw + "/"
 params.output = base + "output/"
 output = params.output + "/"
-params.off = null
+params.off = 0
 fqNameSuffix = "fastq.gz"          // extension on the file name (todo: expand this)
 params.canuPB1 = "-pacbio-corrected"
 params.canuPB2 = "-pacbio-corrected"
@@ -49,18 +49,24 @@ process extract {
     file(markerCapFile)
   output:
 	set s, file{"*_kir.fastq"} into kirFastqs
-    set s, file{"*_off-kir.fastq.gz"} into offkirFastqs
+    set s, file{"*_off-kir.fastq.gz"} into offkirFastqs optional true
 
-    offStr = "out=${s}_off-kir.fastq"
-    if(params.off == null) {
-        offStr = ""
+  script:
+    offFile="${s}_off-kir.fastq"
+    offStr="out=${offFile}"
+    if((params.off == null) || (params.off == 0)) {
+        offStr=""
     }
 	// todo: take out rname
     """
     bbduk.sh in=${fa} ${offStr} outm=${s}_kir.fastq ref=${markerCapFile} k=25 maskmiddle=f overwrite=t rename=t nzo=t rcomp=t ignorebadquality=t -Xmx${maxMem}
     find . -type f -size 0 -print0 |xargs -0 rm -f
-    #gzip ${s}_kir.fastq
-    gzip ${s}_off-kir.fastq
+
+    if [ -f ${offFile} ]; 
+    then
+        gzip ${offFile}
+    fi
+    #todo gzip ${s}_off-kir.fastq
     """
 } // extract
 
