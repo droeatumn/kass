@@ -6,14 +6,14 @@
  * Requires 'docker.enabled = true' in Nexflow configuration (e.g., $HOME/.nextflow/config).
  * 
  * @author Dave Roe
- *
+ * @todo --resume isn't working
  */
 
 // things that may change per run
 // here are the FASTA/Q files
 params.base = baseDir
 base = params.base + "/"
-params.raw = base + "raw/"
+params.raw = base + "/raw/"
 raw = params.raw + "/"
 params.output = base + "output/"
 output = params.output + "/"
@@ -26,7 +26,10 @@ params.canuPB2 = "-pacbio-corrected"
 fqPath = raw + "*" + fqNameSuffix
 markerFile = file("${baseDir}/input/markers.fasta") // gene markers
 markerCapFile = file("${baseDir}/input/markers_wCap.fasta") // gene markers + capture probes
+featuresFile = file("${baseDir}/input/features.txt") // markup features
 haps = base + "${baseDir}/input/HapSet23_v1.txt"
+alignProbesFile = file("${baseDir}/src/alignment2ProbePairs.groovy")
+annotateFile = file("${baseDir}/src/annotateMarkup.groovy")
 maxMem = "24g"
 params.container = "droeatumn/kass:latest"
 
@@ -35,7 +38,7 @@ fqs = Channel.fromPath(fqPath).ifEmpty { error "cannot find any files matching $
 /*
  * extract
  * 
- * Extract the KIR fastq reads from potentially larger set of reads.
+ * Extract the KIR fastq reads from potentially larger tuple of reads.
  * Base and output is fastq
  * Reads that don't match any kmer go to <name>_off-kir.fastq.
  * All others go to <name>_kir.fastq.
@@ -45,11 +48,11 @@ process extract {
   container = 'droeatumn/kass:latest'
   publishDir output, mode: 'copy', overwrite: true
   input:
-    set s, file(fa) from fqs
-    file(markerCapFile)
+    tuple s, path(fa) from fqs
+    path(markerCapFile)
   output:
-	set s, file{"*_kir.fastq"} into kirFastqs
-    set s, file{"*_off-kir.fastq.gz"} into offkirFastqs optional true
+	tuple s, file{"*_kir.fastq"} into kirFastqs
+    tuple s, file{"*_off-kir.fastq.gz"} into offkirFastqs optional true
 
   script:
     offFile="${s}_off-kir.fastq"
@@ -80,9 +83,9 @@ process correct {
   container = 'droeatumn/kass:latest'
   publishDir output, mode: 'copy', overwrite: true
   input:
-    set s, file(fq) from kirFastqs
+    tuple s, path(fq) from kirFastqs
   output:
-	set s, file{"${s}-corrected.fasta.gz"} into correctedReads
+	tuple s, file{"${s}-corrected.fasta.gz"} into correctedReads
 	
     """
     lorma.sh ${fq}
@@ -94,24 +97,59 @@ process correct {
 /*
  * assemble
  * 
- * With two files per sample.
- * e.g., Kir5_P2_10_999F.fasta.gz and Kir5_P2_10_999F_gap.fasta.gz
- * 
- * 
  */
 process assemble {
   container = 'droeatumn/kass:latest'
   publishDir output, mode: 'copy', overwrite: true //todo
   input:
-    set s, file(fq) from correctedReads
+    tuple s, path(fq) from correctedReads
   output:
-    set s, file{"${s}*.contigs.fasta"} into assembly
+    tuple s, file{"${s}*.contigs.fasta"} into assembly
 	
     """
     canu -p ${s} -d ${s} rawErrorRate=0.05 correctedErrorRate=0.01 genomeSize=200k "batOptions=-dg 0.05 -db 0.05 -dr 0.05 -ca 500 -cp 50" ${params.canuPB2} ${s}-corrected.fasta.gz
     cp ${s}/${s}.contigs.fasta .
     """
 } // assemble
+
+process annotateStructure {
+  container = 'droeatumn/kass:latest'
+  publishDir output, mode: 'copy', overwrite: true
+
+  input:
+    tuple s, path(contigs) from assembly
+    path(markerFile)
+  output:
+    tuple s, file{"${s}*_markup.txt"} into markup
+    tuple s, path{"${s}*_annotation.txt"} into annotation
+	
+    """
+    # make indexes
+    samtools faidx ${contigs}
+    mkdir -p bowtie_indexes
+    cd bowtie_indexes
+    bowtie2-build ../${contigs} ${s}
+    cd ..
+
+    # align
+    nice bowtie2 -a --end-to-end --rdg 3,3 --rfg 3,3 -p8 -x bowtie_indexes/${s} -f ${markerFile} -S ${s}.sam 2> ${s}_err.txt
+    cat ${s}_err.txt
+    samtools view -b -S ${s}.sam > ${s}.bam
+    samtools sort ${s}.bam -o ${s}_sorted.bam
+    samtools index ${s}_sorted.bam
+    samtools sort ${s}.bam -O sam -o ${s}_sorted.sam
+    rm ${s}.[bs]am
+
+    # markup the alignment of the probe pairs
+    mkdir -p annotation
+    ${alignProbesFile} -d . -m 1 -o ${s}_markup.txt 2> ${s}_markup_err.txt
+    tail ${s}_markup_err.txt
+    
+    # annotate the markup with the genes
+    ${annotateFile} -i ${featuresFile} -f ${contigs} -m ${s}_markup.txt -o . 2> ${s}_annotation_err.txt
+    cut -f2 ${s}_annotation.txt | sort | uniq -c > ${s}_annotation_strings.txt
+    """
+} // annotate
 
 // get the per-sample name
 def sample(Path path) {
