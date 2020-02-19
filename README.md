@@ -17,7 +17,7 @@ KPI can be used to determine the presence/absence of genes and haplotype pairs f
 The input is a directory containing one or more compressed fastq files, each representing one individual. Each file is from PacBio HiFi 99.9% consensus sequences.<br>
 <br>
 <b>Output</b>
-Each input file has a correspoding output file (contigs.fasta)  with the assembled contigs.
+Each input file has a correspoding output file (*.contigs.fasta)  with the assembled contigs. Each contig is annotated with gene content and order in the file with the suffix 'annoation.txt'.
 <br>
 <b>Running</b>
 Use the argument 'raw' to indicate the input directory, and 'output' to indicate the directory to put the output.
