@@ -40,10 +40,10 @@ RUN cd /opt  && mkdir -p /opt/bin \
 RUN pip3 install --upgrade NanoPlot
 
 # google guava
-#RUN cd /opt \
-#  && git clone https://github.com/google/guava.git \
-#  && cd guava/guava \
-#  && mvn install
+RUN cd /opt \
+  && git clone https://github.com/google/guava.git \
+  && cd guava/guava \
+  && mvn install
 
 # kpi
 #  && git clone https://github.com/droeatumn/kass.git \
@@ -67,7 +67,7 @@ ENV PATH /opt/FastQC:$PATH
 ENV PATH /root/miniconda2/bin:$PATH
 ENV TMPDIR=/opt/kass/work
 ENV TMP=/opt/kass/work
-ENV PATH /opt/bin:/opt/kass:/opt/kass/src:$PATH
+ENV PATH /opt/kass:/opt/kass/src:$PATH
 ENV CLASSPATH /opt/guava/guava/target/guava-HEAD-jre-SNAPSHOT.jar:/opt/jars/commons-math3-3.6.1/commons-math3-3.6.1.jar:$CLASSPATH
 ENV CLASSPATH /opt/jars/guava-21.0.jar:$CLASSPATH
 
