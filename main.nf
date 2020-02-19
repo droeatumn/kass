@@ -23,7 +23,7 @@ params.canuPB1 = "-pacbio-corrected"
 params.canuPB2 = "-pacbio-corrected"
 
 // things that probably won"t change per run
-fqPath = raw + "/*/" + fqNameSuffix
+fqPath = raw + "/*" + fqNameSuffix
 markerFile = file("${baseDir}/input/markers.fasta") // gene markers
 markerCapFile = file("${baseDir}/input/markers_wCap.fasta") // gene markers + capture probes
 featuresFile = file("${baseDir}/input/features.txt") // markup features
