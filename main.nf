@@ -112,6 +112,7 @@ process assemble {
     """
 } // assemble
 
+/*
 process annotateStructure {
   container = 'droeatumn/kass:latest'
   publishDir output, mode: 'copy', overwrite: true
@@ -152,6 +153,7 @@ process annotateStructure {
     cut -f2 ${s}_annotation.txt | sort | uniq -c > ${s}_annotation_strings.txt
     """
 } // annotate
+ */
 
 // get the per-sample name
 def sample(Path path) {
