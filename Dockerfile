@@ -46,17 +46,15 @@ RUN cd /opt \
   && mvn install
 
 # kpi
-#  && git clone https://github.com/droeatumn/kass.git \
-
-# kass source
+#RUN cd /opt && git clone https://github.com/droeatumn/kass.git
 RUN mkdir -p /opt/kass/input /opt/kass/output /opt/kass/src /opt/kass/work
 # todo: remove the 'add' when switching to git
 ADD *.nf /opt/kass/
 ADD input /opt/kass/input/
 ADD src /opt/kass/src/
+
+# environment variables
 ENV PATH /opt/bin:$PATH
-ENV PATH /opt/kass:$PATH
-ENV PATH /opt/kass/src:$PATH
 ENV PATH /opt/lorma-bin_0.5_linux64:$PATH
 ENV PATH /opt/lordec-bin_0.9_linux64:$PATH
 ENV PATH /opt/bowtie2-2.3.5.1-linux-x86_64:$PATH
@@ -67,9 +65,10 @@ ENV PATH /opt/FastQC:$PATH
 ENV PATH /root/miniconda2/bin:$PATH
 ENV TMPDIR=/opt/kass/work
 ENV TMP=/opt/kass/work
-ENV PATH /opt/kass:/opt/kass/src:$PATH
 ENV CLASSPATH /opt/guava/guava/target/guava-HEAD-jre-SNAPSHOT.jar:/opt/jars/commons-math3-3.6.1/commons-math3-3.6.1.jar:$CLASSPATH
 ENV CLASSPATH /opt/jars/guava-21.0.jar:$CLASSPATH
 
-#CMD ["/bin/bash"]
+ENV PATH /opt/kass:$PATH
+ENV PATH /opt/kass/src:$PATH
 CMD ["/opt/kass/main.nf"]
+#CMD ["/bin/bash"]
