@@ -11,11 +11,11 @@
 
 // things that may change per run
 // here are the FASTA/Q files
-params.base = baseDir
-base = params.base + "/"
-params.raw = base + "/raw/"
+params.home = baseDir
+home = params.home + "/"
+params.raw = home + "/raw/"
 raw = params.raw + "/"
-params.output = base + "output/"
+params.output = home + "output/"
 output = params.output + "/"
 params.off = 0
 fqNameSuffix = "fastq.gz"          // extension on the file name (todo: expand this)
@@ -24,12 +24,12 @@ params.canuPB2 = "-pacbio-corrected"
 
 // things that probably won"t change per run
 fqPath = raw + "/*" + fqNameSuffix
-markerFile = file("${baseDir}/input/markers.fasta") // gene markers
-markerCapFile = file("${baseDir}/input/markers_wCap.fasta") // gene markers + capture probes
-featuresFile = file("${baseDir}/input/features.txt") // markup features
-haps = base + "${baseDir}/input/HapSet23_v1.txt"
-alignProbesFile = file("${baseDir}/src/alignment2ProbePairs.groovy")
-annotateFile = file("${baseDir}/src/annotateMarkup.groovy")
+markerFile = file("${home}/input/markers.fasta") // gene markers
+markerCapFile = file("${home}/input/markers_wCap.fasta") // gene markers + capture probes
+featuresFile = file("${home}/input/features.txt") // markup features
+haps = home + "${home}/input/HapSet23_v1.txt"
+alignProbesFile = file("${home}/src/alignment2ProbePairs.groovy")
+annotateFile = file("${home}/src/annotateMarkup.groovy")
 maxMem = "24g"
 params.container = "droeatumn/kass:latest"
 
@@ -119,6 +119,8 @@ process annotateStructure {
   input:
     tuple s, path(contigs) from assembly
     path(markerFile)
+    path(alignProbesFile)
+    path(annotateFile)
   output:
     tuple s, file{"${s}*_markup.txt"} into markup
     tuple s, path{"${s}*_annotation.txt"} into annotation
@@ -142,11 +144,11 @@ process annotateStructure {
 
     # markup the alignment of the probe pairs
     mkdir -p annotation
-    ${alignProbesFile} -d . -m 1 -o ${s}_markup.txt 2> ${s}_markup_err.txt
+    ./${alignProbesFile} -d . -m 1 -o ${s}_markup.txt 2> ${s}_markup_err.txt
     tail ${s}_markup_err.txt
     
     # annotate the markup with the genes
-    ${annotateFile} -i ${featuresFile} -f ${contigs} -m ${s}_markup.txt -o . 2> ${s}_annotation_err.txt
+    ./${annotateFile} -i ${featuresFile} -f ${contigs} -m ${s}_markup.txt -o . 2> ${s}_annotation_err.txt
     cut -f2 ${s}_annotation.txt | sort | uniq -c > ${s}_annotation_strings.txt
     """
 } // annotate
