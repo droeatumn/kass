@@ -20,14 +20,14 @@ The input is a directory containing one or more compressed fastq files, each rep
 Each input file has a correspoding output file (*.contigs.fasta)  with the assembled contigs. Each contig is annotated with gene content and order in the file with the suffix 'annoation.txt'.
 <br>
 <b>Running</b>
-Use the 'home' argument to indicate the location of the 'kpi' directory from the pull. Use the argument 'raw' to indicate the input directory, and 'output' to indicate the directory to put the output.  The defaults are 'raw' and 'output' under 'home'. By default, 'home' is the current working directory.
+Use the parameter 'raw' to indicate the input directory, and 'output' to indicate the directory to put the output.  The defaults are 'raw' and 'output' under the location where kass was pulled.
 
-<code>    ./main.nf --home checkoutDir --raw inDir --output outDir</code><br>
+<code>    ./main.nf --raw inDir --output outDir</code><br>
 e.g.,
-<code>    ./main.nf  --home ~/git/kass --raw ~/input --output ~/output</code>
+<code>    ./main.nf  --raw ~/input --output ~/output</code>
 
-The image contains an example: a cA01&tilde;tA01 homozygous individual (GenBank accession KP420442). <br>
-<code>    ./main.nf --home ~/git/kass --raw ~/git/kass/input/example1 --output outDir</code>
+The image contains an example: simulated reads from a single cA01&tilde;tA01 haplotype (GenBank accession KP420442). <br>
+<code>    ./main.nf --raw ~/git/kass/input/example1 --output outDir</code>
 
 <h2>Alignment</h2>
 <b>Input</b>
@@ -38,11 +38,11 @@ Index files are output for the reference fasta.<br>
 For each non-reference input file, a sorted bam file, its index, and the unaligned reads are output. Also, Qualimap (qualimap.pdf) and NanoPlot (NanoPlot-report.html) reports are generated for the alignment and a FastQC report (fastqc.html) is generated if the input is a fastq file.
 
 <b>Running</b><br>
-Use the 'home' argument to indicate the location of the 'kpi' directory from the pull. Use the 'raw' argument to indicate the input directory, and 'output' to indicate the directory to put the output. Use 'refFasta' to indicate the name of the reference fasta file that is located in the input directory. Use 'threadNum' to optionally set maximum number of threads to use.
+Use the 'raw' parameter to indicate the input directory, and 'output' to indicate the directory to put the output. Use 'refFasta' to indicate the name of the reference fasta file that is located in the input directory. Use 'threadNum' to optionally set maximum number of threads to use.
 
-<code>    align.nf --home checkoutDir --raw inDir --reference refFasta --output outDir --threads threadNum</code><br>
+<code>    align.nf --raw inDir --reference refFasta --output outDir --threads threadNum</code><br>
 e.g.,
-<code>    align.nf --home ~/git/kass --raw ~/input --reference KP420442.fasta --output ~/output --threads 12</code>
+<code>    align.nf --raw ~/input --reference KP420442.fasta --output ~/output --threads 12</code>
 
 
 <h2>Bundled references</h2>
