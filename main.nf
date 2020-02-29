@@ -15,10 +15,12 @@ params.home = baseDir
 home = params.home + "/"
 params.raw = home + "/raw/"
 raw = params.raw + "/"
-params.output = home + "output/"
+params.output = home + "/output"
 output = params.output + "/"
 params.off = 0
 fqNameSuffix = "fastq.gz"          // extension on the file name (todo: expand this)
+params.container = "droeatumn/kass:latest"
+params.nocontainer = "null"
 params.canuPB1 = "-pacbio-corrected"
 params.canuPB2 = "-pacbio-corrected"
 
@@ -31,7 +33,6 @@ haps = home + "${home}/input/HapSet23_v1.txt"
 alignProbesFile = file("${home}/src/alignment2ProbePairs.groovy")
 annotateFile = file("${home}/src/annotateMarkup.groovy")
 maxMem = "24g"
-params.container = "droeatumn/kass:latest"
 
 fqs = Channel.fromPath(fqPath).ifEmpty { error "cannot find any files matching ${fqPath}" }.map { path -> tuple(sample(path), path) }
 
@@ -45,22 +46,23 @@ fqs = Channel.fromPath(fqPath).ifEmpty { error "cannot find any files matching $
  *
  */
 process extract {
-  container = 'droeatumn/kass:latest'
-  publishDir output, mode: 'copy', overwrite: true
-  input:
-    tuple s, path(fa) from fqs
-    path(markerCapFile)
-  output:
-	tuple s, file{"*_kir.fastq"} into kirFastqs
-    tuple s, file{"*_off-kir.fastq.gz"} into offkirFastqs optional true
-
-  script:
-    offFile="${s}_off-kir.fastq"
-    offStr="out=${offFile}"
-    if((params.off == null) || (params.off == 0)) {
-        offStr=""
+    if(params.nocontainer == "null") { 
+        container = params.container
     }
-	// todo: take out rname
+    publishDir output, mode: 'copy', overwrite: true
+    input:
+        tuple s, path(fa) from fqs
+        path(markerCapFile)
+    output:
+	    tuple s, file{"*_kir.fastq"} into kirFastqs
+        tuple s, file{"*_off-kir.fastq.gz"} into offkirFastqs optional true
+
+    script:
+        offFile="${s}_off-kir.fastq"
+        offStr="out=${offFile}"
+        if((params.off == null) || (params.off == 0)) {
+            offStr=""
+        }
     """
     bbduk.sh in=${fa} ${offStr} outm=${s}_kir.fastq ref=${markerCapFile} k=25 maskmiddle=f overwrite=t rename=t nzo=t rcomp=t ignorebadquality=t -Xmx${maxMem}
     find . -type f -size 0 -print0 |xargs -0 rm -f
@@ -80,7 +82,9 @@ process extract {
  *
  */
 process correct {
-  container = 'droeatumn/kass:latest'
+  if(params.nocontainer == "null") { 
+      container = params.container
+  }
   publishDir output, mode: 'copy', overwrite: true
   input:
     tuple s, path(fq) from kirFastqs
@@ -99,7 +103,9 @@ process correct {
  * 
  */
 process assemble {
-  container = 'droeatumn/kass:latest'
+  if(params.nocontainer == "null") { 
+    container = params.container
+  }
   publishDir output, mode: 'copy', overwrite: true //todo
   input:
     tuple s, path(fq) from correctedReads
@@ -107,6 +113,7 @@ process assemble {
     tuple s, file{"${s}*.contigs.fasta"} into assembly
 	
     """
+    # ${output}
     canu -p ${s} -d ${s} rawErrorRate=0.05 correctedErrorRate=0.01 genomeSize=200k "batOptions=-dg 0.05 -db 0.05 -dr 0.05 -ca 500 -cp 50" ${params.canuPB2} ${s}-corrected.fasta.gz
     cp ${s}/${s}.contigs.fasta .
     """
@@ -114,7 +121,9 @@ process assemble {
 
 /*
 process annotateStructure {
-  container = 'droeatumn/kass:latest'
+  if(params.nocontainer == "null") { 
+    container = params.container
+  }
   publishDir output, mode: 'copy', overwrite: true
 
   input:
