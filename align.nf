@@ -14,26 +14,32 @@
  * @todo add support for bwa
  */
 
-//params.input = "/Users/daver/git/kass/raw"
-params.input = "/opt/kass/raw"
+params.home = baseDir
+home = params.home + "/"
+params.raw = "/opt/kass/raw"
 //params.output = "/Users/daver/git/kass/output"
-params.output = "/opt/kass/output"
+params.output = home + "/output"
+output = params.output + "/"
 params.reference = ""
 params.bowtie = "--end-to-end -N0"
 params.threads = "8"
+params.container = "droeatumn/kass:latest"
+params.nocontainer = "null"
 
-refFile = file("${params.input}/${params.reference}")
+refFile = file("${params.raw}/${params.reference}")
 
-raw = "${params.input}/*{fastq,fq,fastq.gz,fq.gz,fasta,fa,fasta.gz,fa.gz}"
-//raw = "${params.input}/*{fastq,fq,fastq.gz,fq.gz}"
+raw = "${params.raw}/*{fastq,fq,fastq.gz,fq.gz,fasta,fa,fasta.gz,fa.gz}"
 reads = Channel.fromPath(raw).ifEmpty { error "cannot find any reads matching ${raw}" }.map { path -> tuple(sample(path), path) }
 alignmentReads = Channel.create()
 readTap = reads.tap(alignmentReads).filter{ it[1] != refFile }
 //System.err.println readTap
 
 process align {
-  publishDir params.output, mode: 'copy', overwrite: true
-  tag { s }
+    if(params.nocontainer == "null") { 
+        container = params.container
+    }
+    publishDir params.output, mode: 'copy', overwrite: true
+    tag { s }
 
   // r is the input to be aligned
   input:
@@ -82,9 +88,12 @@ process align {
 } // align
 
 process report {
-  errorStrategy 'ignore'
-  publishDir params.output, mode: 'copy', overwrite: true
-  tag { s }
+    if(params.nocontainer == "null") { 
+        container = params.container
+    }
+    errorStrategy 'ignore'
+    publishDir params.output, mode: 'copy', overwrite: true
+    tag { s }
 
   // r is the input to be aligned
   input:
