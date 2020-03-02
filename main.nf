@@ -21,8 +21,7 @@ params.off = 0
 fqNameSuffix = "fastq.gz"          // extension on the file name (todo: expand this)
 params.container = "droeatumn/kass:latest"
 params.nocontainer = "null"
-params.canuPB1 = "-pacbio-corrected"
-params.canuPB2 = "-pacbio-corrected"
+params.canuPB = "-pacbio-hifi"
 
 // things that probably won"t change per run
 fqPath = raw + "/*" + fqNameSuffix
@@ -114,7 +113,7 @@ process assemble {
 	
     """
     # ${output}
-    canu -p ${s} -d ${s} rawErrorRate=0.05 correctedErrorRate=0.01 genomeSize=200k "batOptions=-dg 0.05 -db 0.05 -dr 0.05 -ca 500 -cp 50" ${params.canuPB2} ${s}-corrected.fasta.gz
+    canu -p ${s} -d ${s} genomeSize=200k ${params.canuPB} ${s}-corrected.fasta.gz
     cp ${s}/${s}.contigs.fasta .
     """
 } // assemble
