@@ -20,7 +20,7 @@ The input is a directory containing one or more compressed fastq files, each rep
 Each input file has a correspoding output file (*.contigs.fasta)  with the assembled contigs. Each contig is annotated with gene content and order in the file with the suffix 'annoation.txt'.
 <br>
 <b>Running</b>
-Use the parameter 'raw' to indicate the input directory, and 'output' to indicate the directory to put the output.  The defaults are 'raw' and 'output' under the location where kass was pulled.
+Use the parameter 'raw' to indicate the input directory, and 'output' to indicate the directory to put the output.  The defaults are 'raw' and 'output' under the location where kass was pulled. Optionally use --threads to optionally set maximum number of threads to use (default 8).
 
 <code>    ./main.nf --raw inDir --output outDir</code><br>
 e.g.,
@@ -38,16 +38,29 @@ Index files are output for the reference fasta.<br>
 For each non-reference input file, a sorted bam file, its index, and the unaligned reads are output. Also, Qualimap (qualimap.pdf) and NanoPlot (NanoPlot-report.html) reports are generated for the alignment and a FastQC report (fastqc.html) is generated if the input is a fastq file.
 
 <b>Running</b><br>
-Use the 'raw' parameter to indicate the input directory, and 'output' to indicate the directory to put the output. Use 'refFasta' to indicate the name of the reference fasta file that is located in the input directory. Use 'threadNum' to optionally set maximum number of threads to use.
+Use the 'raw' parameter to indicate the input directory, and 'output' to indicate the directory to put the output. Use 'refFasta' to indicate the name of the reference fasta file that is located in the input directory. Use 'threadNum' to optionally set maximum number of threads to use (default 8).
 
 <code>    align.nf --raw inDir --reference refFasta --output outDir --threads threadNum</code><br>
 e.g.,
 <code>    align.nf --raw ~/input --reference KP420442.fasta --output ~/output --threads 12</code>
 
+<h2>Annotation</h2>
+<b>Input</b>
+The input is a folder containing fasta files (usually contigs) to be annotated. Each file may contain more than one sequence.<br>
+<br>
+<b>Output</b> <br>
+For each fasta input file, a markup (_markup.txt) file and two annotation files (_annotation.txt and _annotation_strings.txt) will be created.
+
+<b>Running</b><br>
+Use the 'raw' parameter to indicate the input directory, and 'output' to indicate the directory to put the output. Use 'refFasta' to indicate the name of the reference fasta file that is located in the input directory. Use 'threadNum' to optionally set maximum number of threads to use (default 8).
+
+<code>    annotate.nf --raw inDir --output outDir --threads threadNum</code><br>
+e.g.,
+<code>    annotate.nf --raw ~/input --output ~/output --threads 12</code>
 
 <h2>Bundled references</h2>
 Some references and their indexes are bundled in input/references/. 
-KP420439 and KP420442 are cA01&tilde;tA01. KP420440 is cB01&tilde;tB01.
+KP420439 and KP420442 are cA01&tilde;tA01. KP420440 is cB01&tilde;tB01. They each have a bed file that documents the locations of the genes.
 
 <h2>Miscellaneous</h2>
 <b>Hardware</b><br>
