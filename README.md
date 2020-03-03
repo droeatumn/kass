@@ -29,6 +29,20 @@ e.g.,
 The image contains an example: simulated reads from a single cA01&tilde;tA01 haplotype (GenBank accession KP420442). <br>
 <code>    ./main.nf --raw ~/git/kass/input/example1 --output outDir</code>
 
+<h2>Annotation</h2>
+<b>Input</b>
+The input is a folder containing fasta files (usually contigs) to be annotated. Each file may contain more than one sequence.<br>
+<br>
+<b>Output</b> <br>
+For each fasta input file, a markup (_markup.txt) file and two annotation files (_annotation.txt and _annotation_strings.txt) will be created.
+
+<b>Running</b><br>
+Use the 'raw' parameter to indicate the input directory, and 'output' to indicate the directory to put the output. Use 'refFasta' to indicate the name of the reference fasta file that is located in the input directory. Use 'threadNum' to optionally set maximum number of threads to use (default 8).
+
+<code>    annotate.nf --raw inDir --output outDir --threads threadNum</code><br>
+e.g.,
+<code>    annotate.nf --raw ~/input --output ~/output --threads 12</code>
+
 <h2>Alignment</h2>
 <b>Input</b>
 The input is a directory containing a reference sequence in a fasta file along with one or more fasta/fastq files to be aligned to that reference.<br>
@@ -43,20 +57,6 @@ Use the 'raw' parameter to indicate the input directory, and 'output' to indicat
 <code>    align.nf --raw inDir --reference refFasta --output outDir --threads threadNum</code><br>
 e.g.,
 <code>    align.nf --raw ~/input --reference KP420442.fasta --output ~/output --threads 12</code>
-
-<h2>Annotation</h2>
-<b>Input</b>
-The input is a folder containing fasta files (usually contigs) to be annotated. Each file may contain more than one sequence.<br>
-<br>
-<b>Output</b> <br>
-For each fasta input file, a markup (_markup.txt) file and two annotation files (_annotation.txt and _annotation_strings.txt) will be created.
-
-<b>Running</b><br>
-Use the 'raw' parameter to indicate the input directory, and 'output' to indicate the directory to put the output. Use 'refFasta' to indicate the name of the reference fasta file that is located in the input directory. Use 'threadNum' to optionally set maximum number of threads to use (default 8).
-
-<code>    annotate.nf --raw inDir --output outDir --threads threadNum</code><br>
-e.g.,
-<code>    annotate.nf --raw ~/input --output ~/output --threads 12</code>
 
 <h2>Bundled references</h2>
 Some references and their indexes are bundled in input/references/. 
