@@ -62,7 +62,6 @@ err = System.err
 
 OptionAccessor options = handleArgs(args)
 boolean outputMatrix = true
-err.println "options.m=" + options.m //todo
 if(options.m == "0") {//todo: this isn't working
 	outputMatrix = false
 }
@@ -184,9 +183,9 @@ void annotateReads(File samFile,
 			probePair = previousProbe + "-" + probe
 			Character probeAcc = getProbePairAcc(probeAccMap, probePair)
 			if(probeAcc == null) {
-				probeAcc = accessionList.pop()
+				probeAcc = accessionList.remove(0)
 				probeAccMap[probePair] = probeAcc
-				if(debugging <= 2) { 
+				if(debugging <= 5) { 
 					err.println "$location $probePair = $probeAcc"
 					err.println "adding to accessionList: " + accessionList.join(",")
 				}
