@@ -9,6 +9,7 @@ Create accounts in GitHub and Docker Hub.
 Add 'docker.enabled = true' and 'docker.fixOwnership = true' to your Nexflow
 configuration (e.g., $HOME/.nextflow/config). Make sure Docker is running
 and you are logged in to Docker Hub.
+Use the --nocontainer option to run without any container (natively).
 
 <h2>Structural analysis</h2>
 KPI can be used to determine the presence/absence of genes and haplotype pairs from the raw data: https://github.com/droeatumn/kpi
