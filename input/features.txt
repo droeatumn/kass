@@ -1,7 +1,6 @@
 markup	resolution	nomenclature (classic)	gene nomanclature (new)	notes
-^[BChDcog]*?[EL]	gene/allele	3DL3	3DL3
+^[BChDcog]+?[EL]	gene/allele	3DL3	3DL3
 (FO|Fp|SCANJP).*	gene/allele	3DL2	3DL2
-F$ 	gene/allele	3DL2	3DL2
 SCA?N?J?$ 	gene/allele	3DL2	3DL2	usually  less than full gene ends
 SCANJKL	gene/allele	3DL1/3DS1	3DL1S1
 MHCIJK[Lk]	gene	2DL1/2DS1/2DS2	2DL1S1S2
