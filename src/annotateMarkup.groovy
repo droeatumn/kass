@@ -153,10 +153,10 @@ void writeOutput(String outDir, String fastaName,
 		err.println "writeOutput: fileName=${fileName}"
 		//err.println "writeOutput: " + descGeneSeqTable.get("KP420439.1", " 2DL1S1S2")//todo
 	}
-	err.println descGeneSeqTable //todo
+	//err.println descGeneSeqTable //todo
 	// write fastas
 	columnSet.each { geneName ->
-		err.println "writeOutput: orig geneName=${geneName}"//todo
+		//err.println "writeOutput: orig geneName=${geneName}"//todo
 		outGeneName = geneName.replaceAll("/2D", "").replaceAll("/3D", "")
 		outputFastaName = outDir + "/" +
 			fileName.replaceFirst(".fasta", "").replaceFirst(".fa", "") +
@@ -607,16 +607,14 @@ String annotate(String markup,
 			Matcher matcher = pattern.matcher(markup)
 			boolean found = matcher.find()
 			//todo boolean found = matcher.matches()
-			err.println "annotate: find $feature: ${found}"//todo
+			//err.println "annotate: find $feature: ${found}"//todo
 			if(found == false) { //can't trust this; see continue below
 				continue;
 			}
-			err.println "droe=${matcher.start()}"//droe
+			//err.println "droe=${matcher.start()}"//droe
 			Integer fIndex = matcher.start()
 			Integer fendIndex = matcher.end()
 
-			err.println "fIndex=${fIndex}"//todo
-			err.println "fendIndex=" + fendIndex//todo
 			if(fIndex == fendIndex) { // didn't find the pattern
 				continue;
 			}
