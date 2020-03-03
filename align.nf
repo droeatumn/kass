@@ -17,7 +17,6 @@
 params.home = baseDir
 home = params.home + "/"
 params.raw = "/opt/kass/raw"
-//params.output = "/Users/daver/git/kass/output"
 params.output = home + "/output"
 output = params.output + "/"
 params.reference = ""
