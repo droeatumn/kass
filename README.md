@@ -1,6 +1,6 @@
 # kass
 main.nf assembles KIR haplotypes from PacBio HiFi reads.<br>
-annotate.nf annotates the structure of assembled contigs
+annotate.nf annotates the structure of assembled contigs<br>
 align.nf aligns and reports on the raw and/or assembled sequences.
 
 <h2>Dependancies</h2>
@@ -35,7 +35,7 @@ The image contains an example: simulated reads from a single cA01&tilde;tA01 hap
 The input is a folder containing fasta files (usually contigs) to be annotated. Each file may contain more than one sequence.<br>
 <br>
 <b>Output</b><br>
-For each fasta input file, a markup (_markup.txt) file and two annotation files (_annotation.txt and _annotation_strings.txt) will be created.
+For each fasta input file, a markup (_markup.txt) file and two annotation files (_annotation.txt and _annotation_strings.txt) will be created.<br>
 <br>
 <b>Running</b><br>
 Use the 'raw' parameter to indicate the input directory, and 'output' to indicate the directory to put the output. Use 'refFasta' to indicate the name of the reference fasta file that is located in the input directory. Use 'threadNum' to optionally set maximum number of threads to use (default 8).
@@ -50,10 +50,10 @@ The input is a directory containing a reference sequence in a fasta file along w
 <br>
 <b>Output</b><br>
 Index files are output for the reference fasta.<br>
-For each non-reference input file, a sorted bam file, its index, and the unaligned reads are output. Also, Qualimap (qualimap.pdf) and NanoPlot (NanoPlot-report.html) reports are generated for the alignment and a FastQC report (fastqc.html) is generated if the input is a fastq file.
+For each non-reference input file, a sorted bam file, its index, and the unaligned reads are output. Also, Qualimap (qualimap.pdf) and NanoPlot (NanoPlot-report.html) reports are generated for the alignment and a FastQC report (fastqc.html) is generated if the input is a fastq file.<br>
 <br>
 <b>Running</b><br>
-Use the 'raw' parameter to indicate the input directory, and 'output' to indicate the directory to put the output. Use 'refFasta' to indicate the name of the reference fasta file that is located in the input directory. Use 'threadNum' to optionally set maximum number of threads to use (default 8).
+Use the 'raw' parameter to indicate the input directory, and 'output' to indicate the directory to put the output. Use 'refFasta' to indicate the name of the reference fasta file that is located in the input directory. Use 'threadNum' to optionally set maximum number of threads to use (default 8).<br>
 
 <code>    align.nf --raw inDir --reference refFasta --output outDir --threads threadNum</code><br>
 e.g.,
