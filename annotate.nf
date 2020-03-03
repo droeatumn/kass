@@ -21,7 +21,7 @@ params.nocontainer = "null"
 
 refFile = file("${params.raw}/${params.reference}")
 featuresFile = file("${home}/input/features.txt") // markup features
-markerFile = file("${home}/input/markers.fasta") // gene markers
+markerFile = file("${home}/input/cap.fasta") // capture markers
 alignProbesFile = file("${home}/src/alignment2ProbePairs.groovy")
 annotateFile = file("${home}/src/annotateMarkup.groovy")
 
