@@ -31,7 +31,6 @@ featuresFile = file("${home}/input/features.txt") // markup features
 haps = home + "${home}/input/HapSet23_v1.txt"
 alignProbesFile = file("${home}/src/alignment2ProbePairs.groovy")
 annotateFile = file("${home}/src/annotateMarkup.groovy")
-maxMem = "24g"
 
 fqs = Channel.fromPath(fqPath).ifEmpty { error "cannot find any files matching ${fqPath}" }.map { path -> tuple(sample(path), path) }
 
@@ -63,7 +62,7 @@ process extract {
             offStr=""
         }
     """
-    bbduk.sh in=${fa} ${offStr} outm=${s}_kir.fastq ref=${markerCapFile} k=25 maskmiddle=f overwrite=t rename=t nzo=t rcomp=t ignorebadquality=t -Xmx${maxMem}
+    bbduk.sh in=${fa} ${offStr} outm=${s}_kir.fastq ref=${markerCapFile} k=25 maskmiddle=f overwrite=t rename=t nzo=t rcomp=t ignorebadquality=t
     find . -type f -size 0 -print0 |xargs -0 rm -f
 
     if [ -f ${offFile} ]; 
