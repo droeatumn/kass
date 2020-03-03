@@ -56,10 +56,11 @@ process extract {
         tuple s, file{"*_off-kir.fastq.gz"} into offkirFastqs optional true
 
     script:
-        offFile="${s}_off-kir.fastq"
-        offStr="out=${offFile}"
-        if((params.off == null) || (params.off == 0)) {
-            offStr=""
+        offFile=""
+        offStr=""
+        if(params.off != 0) {
+            offFile="${s}_off-kir.fastq"
+            offStr="out=${offFile}"
         }
     """
     bbduk.sh in=${fa} ${offStr} outm=${s}_kir.fastq ref=${markerCapFile} k=25 maskmiddle=f overwrite=t rename=t nzo=t rcomp=t ignorebadquality=t
