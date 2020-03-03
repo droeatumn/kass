@@ -22,7 +22,7 @@ The input is a directory containing one or more compressed fastq files, each rep
 Each input file has a correspoding output file (*.contigs.fasta)  with the assembled contigs. Each contig is annotated with gene content and order in the file with the suffix 'annoation.txt'.<br>
 <br>
 <b>Running</b>
-Use the parameter 'raw' to indicate the input directory, and 'output' to indicate the directory to put the output.  The defaults are 'raw' and 'output' under the location where kass was pulled. Optionally use --threads to optionally set maximum number of threads to use (default 8).<br>
+Use the parameter 'raw' to indicate the input directory, and 'output' to indicate the directory to put the output.  The defaults are 'raw' and 'output' under the location where kass was pulled. Optionally use --threads to optionally set maximum number of threads to use (default 8). To output the off-kir reads, use --off.<br>
 
 <code>    ./main.nf --raw inDir --output outDir</code><br>
 e.g.,
