@@ -26,7 +26,6 @@ params.threads = "8"
 
 // things that probably won"t change per run
 fqPath = raw + "/*" + fqNameSuffix
-markerFile = file("${home}/input/markers.fasta") // gene markers
 markerCapFile = file("${home}/input/markers_wCap.fasta") // gene markers + capture probes
 featuresFile = file("${home}/input/features.txt") // markup features
 haps = home + "${home}/input/HapSet23_v1.txt"
