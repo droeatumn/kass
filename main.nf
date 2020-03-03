@@ -22,6 +22,7 @@ fqNameSuffix = "fastq.gz"          // extension on the file name (todo: expand t
 params.container = "droeatumn/kass:latest"
 params.nocontainer = "null"
 params.canuPB = "-pacbio-hifi"
+params.threads = "8"
 
 // things that probably won"t change per run
 fqPath = raw + "/*" + fqNameSuffix
@@ -109,7 +110,7 @@ process assemble {
   input:
     tuple s, path(fq) from correctedReads
   output:
-    tuple s, file{"${s}*.contigs.fasta"} into assembly
+    tuple s, path{"${s}*.contigs.fasta"} into assembly
 	
     """
     # ${output}
@@ -117,51 +118,6 @@ process assemble {
     cp ${s}/${s}.contigs.fasta .
     """
 } // assemble
-
-/*
-process annotateStructure {
-  if(params.nocontainer == "null") { 
-    container = params.container
-  }
-  publishDir output, mode: 'copy', overwrite: true
-
-  input:
-    tuple s, path(contigs) from assembly
-    path(markerFile)
-    path(alignProbesFile)
-    path(annotateFile)
-  output:
-    tuple s, file{"${s}*_markup.txt"} into markup
-    tuple s, path{"${s}*_annotation.txt"} into annotation
-	
-    """
-    # make indexes
-    samtools faidx ${contigs}
-    mkdir -p bowtie_indexes
-    cd bowtie_indexes
-    bowtie2-build ../${contigs} ${s}
-    cd ..
-
-    # align
-    nice bowtie2 -a --end-to-end --rdg 3,3 --rfg 3,3 -p8 -x bowtie_indexes/${s} -f ${markerFile} -S ${s}.sam 2> ${s}_err.txt
-    cat ${s}_err.txt
-    samtools view -b -S ${s}.sam > ${s}.bam
-    samtools sort ${s}.bam -o ${s}_sorted.bam
-    samtools index ${s}_sorted.bam
-    samtools sort ${s}.bam -O sam -o ${s}_sorted.sam
-    rm ${s}.[bs]am
-
-    # markup the alignment of the probe pairs
-    mkdir -p annotation
-    ./${alignProbesFile} -d . -m 1 -o ${s}_markup.txt 2> ${s}_markup_err.txt
-    tail ${s}_markup_err.txt
-    
-    # annotate the markup with the genes
-    ./${annotateFile} -i ${featuresFile} -f ${contigs} -m ${s}_markup.txt -o . 2> ${s}_annotation_err.txt
-    cut -f2 ${s}_annotation.txt | sort | uniq -c > ${s}_annotation_strings.txt
-    """
-} // annotate
- */
 
 // get the per-sample name
 def sample(Path path) {
