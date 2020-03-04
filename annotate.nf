@@ -52,6 +52,7 @@ process annotateStructure {
     tuple s, file{"${s}*_markup.txt"} into markup
     tuple s, path{"${s}*_annotation.txt"} into annotation
     tuple s, path{"${s}*_annotation_strings.txt"} into annotationStrings
+    tuple s, path{"${s}*_features.fasta"} into features
     
   script:
     // todo: modularize this chunk
@@ -94,6 +95,7 @@ process annotateStructure {
     echo "annotating ${s}..."
     # annotate the markup with the genes
     ./${annotateFile} -i ${featuresFile} -f ${r} -m ${bamName}_markup.txt -o . 2> ${bamName}_annotation_err.txt
+    echo "done"
     cut -f2 ${bamName}_annotation.txt | sort | uniq -c > ${bamName}_annotation_strings.txt
 
     """
