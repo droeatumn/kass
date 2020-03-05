@@ -46,11 +46,13 @@ RUN cd /opt \
 
 # kpi
 #RUN cd /opt && git clone https://github.com/droeatumn/kass.git
-RUN mkdir -p /opt/kass/input /opt/kass/output /opt/kass/src /opt/kass/work
+RUN mkdir -p /opt/kass/input /opt/kass/output /opt/kass/bin /opt/kass/work /opt/kass/src
 # todo: remove the 'add' when switching to git
 ADD *.nf /opt/kass/
 ADD input /opt/kass/input/
+ADD bin /opt/kass/bin/
 ADD src /opt/kass/src/
+ENV CLASSPATH /opt/kass/bin/jars/slf4j-api-1.7.5.jar:/opt/kass/bin/jars/biojava4-core.jar:/opt/kass/bin/jars/dsh-commandline-1.1.jar:/opt/kass/bin/jars/super-csv.jar:$CLASSPATH
 
 # environment variables
 ENV PATH /opt/bin:$PATH
@@ -68,6 +70,7 @@ ENV CLASSPATH /opt/guava/guava/target/guava-HEAD-jre-SNAPSHOT.jar:/opt/jars/comm
 ENV CLASSPATH /opt/jars/guava-21.0.jar:$CLASSPATH
 
 ENV PATH /opt/kass:$PATH
+ENV PATH /opt/kass/bin:$PATH
 ENV PATH /opt/kass/src:$PATH
 CMD ["/opt/kass/main.nf"]
 #CMD ["/bin/bash"]
