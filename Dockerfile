@@ -65,7 +65,7 @@ ENV PATH /opt/bbmap:$PATH
 ENV PATH /opt/canu-1.9/Linux-amd64/bin:$PATH
 ENV PATH /opt/FastQC:$PATH
 ENV PATH /root/miniconda2/bin:$PATH
-ENV PATH /usr/share/augustus:$PATH
+ENV PATH /usr/share/augustus/scripts:$PATH
 ENV TMPDIR=/opt/kass/work
 ENV TMP=/opt/kass/work
 ENV CLASSPATH /opt/guava/guava/target/guava-HEAD-jre-SNAPSHOT.jar:/opt/jars/commons-math3-3.6.1/commons-math3-3.6.1.jar:$CLASSPATH
