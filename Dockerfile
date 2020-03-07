@@ -11,7 +11,7 @@ ENV TMPDIR /tmp
 RUN apt-get update && apt-get install -qyy curl git make vim cmake \
     gcc g++ unzip maven subversion gzip openjdk-8-jdk groovy wget \
     zlib1g-dev gnuplot lynx libncurses5-dev libncursesw5-dev libbz2-dev \
-    liblzma-dev python python3-pip cython3 tabix bwa \
+    liblzma-dev python python3-pip cython3 tabix bwa augustus \
   && apt-get clean 
 
 # install stuff
@@ -35,9 +35,7 @@ RUN cd /opt  && mkdir -p /opt/bin \
   && unzip qualimap_v2.2.1.zip && rm qualimap_v2.2.1.zip \
   && cd /opt && wget http://www.bioinformatics.babraham.ac.uk/projects/fastqc/fastqc_v0.11.9.zip \
   && unzip fastqc_v0.11.9.zip && rm fastqc_v0.11.9.zip \
-  && chmod 750 /opt/FastQC/fastqc \
-  && cd /opt && wget https://github.com/Gaius-Augustus/Augustus/releases/download/v3.3.3/augustus-3.3.3.tar.gz \
-  && gunzip augustus-3.3.3.tar.gz && tar -xvf augustus-3.3.3.tar && rm augustus-3.3.3.tar
+  && chmod 750 /opt/FastQC/fastqc
 
 RUN pip3 install --upgrade NanoPlot
 
@@ -67,6 +65,7 @@ ENV PATH /opt/bbmap:$PATH
 ENV PATH /opt/canu-1.9/Linux-amd64/bin:$PATH
 ENV PATH /opt/FastQC:$PATH
 ENV PATH /root/miniconda2/bin:$PATH
+ENV PATH /usr/share/augustus:$PATH
 ENV TMPDIR=/opt/kass/work
 ENV TMP=/opt/kass/work
 ENV CLASSPATH /opt/guava/guava/target/guava-HEAD-jre-SNAPSHOT.jar:/opt/jars/commons-math3-3.6.1/commons-math3-3.6.1.jar:$CLASSPATH
