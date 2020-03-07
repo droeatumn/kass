@@ -2,6 +2,7 @@ FROM ubuntu:latest
 
 # env vars
 ENV NXF_OPTS "-Xms1G -Xmx50G"
+ENV JAVA_OPTS "-Xms4G -Xmx50G"
 ENV LD_LIBRARY_PATH /opt/lib:$LD_LIBRARY_PATH
 ENV JAVA_HOME /usr/lib/jvm/java-8-openjdk-amd64/
 ENV TMPDIR /tmp
@@ -34,7 +35,9 @@ RUN cd /opt  && mkdir -p /opt/bin \
   && unzip qualimap_v2.2.1.zip && rm qualimap_v2.2.1.zip \
   && cd /opt && wget http://www.bioinformatics.babraham.ac.uk/projects/fastqc/fastqc_v0.11.9.zip \
   && unzip fastqc_v0.11.9.zip && rm fastqc_v0.11.9.zip \
-  && chmod 750 /opt/FastQC/fastqc
+  && chmod 750 /opt/FastQC/fastqc \
+  && cd /opt && wget https://github.com/Gaius-Augustus/Augustus/releases/download/v3.3.3/augustus-3.3.3.tar.gz \
+  && gunzip augustus-3.3.3.tar.gz && tar -xvf augustus-3.3.3.tar && rm augustus-3.3.3.tar
 
 RUN pip3 install --upgrade NanoPlot
 
