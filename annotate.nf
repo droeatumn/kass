@@ -5,6 +5,7 @@
  * 
  * @author Dave Roe
  * @todo remove full paths to augustus bin and scripts
+ * @todo rename gl.txt
  */
 
 params.home = baseDir
@@ -50,9 +51,9 @@ process structure {
   output:
 //    set s, file {"*_sorted.bam*"} into bamOutput
 //    tuple val(s), file("*_sorted.bam"), file("*_sorted.bam.bai"), file(r) into bamOutput
-    tuple s, file{"${s}*_markup.txt"} into markup
+//    tuple s, file{"${s}*_markup.txt"} into markup
     tuple s, path{"${s}*_annotation.txt"} into annotation
-    tuple s, path{"${s}*_annotation_strings.txt"} into annotationStrings
+//    tuple s, path{"${s}*_annotation_strings.txt"} into annotationStrings
     tuple s, path{"${s}*_features.fasta"} into features mode flatten
     
   script:
