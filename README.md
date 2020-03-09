@@ -36,7 +36,7 @@ The image contains an example: simulated reads from a single cA01&tilde;tA01 hap
 The input is a folder containing fasta files (usually contigs) to be annotated. Each file may contain more than one sequence.<br>
 <br>
 <b>Output</b><br>
-For each fasta input file, a markup (_markup.txt) file and two annotation files (_annotation.txt and _annotation_strings.txt) will be created.<br>
+For each fasta input file, an annotation file (annotation.txt) will be created to annotate the higher-level structure. For each locus, feature tables (ft.txt) and a genotype list (gl.txt) are created to annotate the alleles.<br>
 <br>
 <b>Running</b><br>
 Use the 'raw' parameter to indicate the input directory, and 'output' to indicate the directory to put the output. Use 'refFasta' to indicate the name of the reference fasta file that is located in the input directory. Use 'threadNum' to optionally set maximum number of threads to use (default 8).
@@ -69,6 +69,7 @@ KP420439 and KP420442 are cA01&tilde;tA01. KP420440 is cB01&tilde;tB01. They eac
 Minimum recommended hardware is 30G memory and 8 cores. More of each helps.
 Run time is 1-2 hours per ID, depending on platform, genotype variation, and parallel execution.
 <br><br>
-Full-gene alleles are annotated with respect to the IPD database (http://www.ebi.ac.uk/ipd/kir).<br>
+<b>Allele annotation</b><br>
+Full-gene alleles are annotated with respect to the IPD database version 3.9.0 (http://www.ebi.ac.uk/ipd/kir).<br>
 Robinson J, Halliwell JA, Hayhurst JH, Flicek P, Parham P, Marsh SGE: The IPD and IPD-IMGT/HLA Database: allele variant databases Nucleic Acids Research (2015), 43:D423-431<br>
 Robinson J, Malik A, Parham P, Bodmer JG, Marsh SGE: IMGT/HLA - a sequence database for the human major histocompatibility complex Tissue Antigens (2000), 55:280-287
