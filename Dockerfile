@@ -1,4 +1,4 @@
-FROM ubuntu:latest
+FROM augustus:latest
 
 # env vars
 ENV NXF_OPTS "-Xms1G -Xmx50G"
@@ -8,10 +8,11 @@ ENV JAVA_HOME /usr/lib/jvm/java-8-openjdk-amd64/
 ENV TMPDIR /tmp
 
 # apt stuff
+# augustus is 3.0 in apt, 3.3.3 in github
 RUN apt-get update && apt-get install -qyy curl git make vim cmake \
     gcc g++ unzip maven subversion gzip openjdk-8-jdk groovy wget \
     zlib1g-dev gnuplot lynx libncurses5-dev libncursesw5-dev libbz2-dev \
-    liblzma-dev python python3-pip cython3 tabix bwa augustus \
+    liblzma-dev python python3-pip cython3 tabix bwa  \
   && apt-get clean 
 
 # install stuff
@@ -20,7 +21,7 @@ RUN cd /opt  && mkdir -p /opt/bin \
   && cd /opt && wget https://sourceforge.net/projects/bbmap/files/latest/download \
   && mv download BBMap.tar && tar -xvzf BBMap.tar && rm BBMap.tar \
   && wget https://github.com/refresh-bio/KMC/releases/download/v3.1.1/KMC3.1.1.linux.tar.gz \
-  && gunzip KMC3.1.1.linux.tar.gz && tar -xvf KMC3.1.1.linux.tar && rm -f KMC3.KMC3.1.1.linux.tar \  
+  && gunzip KMC3.1.1.linux.tar.gz && tar -xvf KMC3.1.1.linux.tar && rm -f KMC3.1.1.linux.tar \  
   && cd /opt && wget https://github.com/marbl/canu/releases/download/v1.9/canu-1.9.Linux-amd64.tar.xz && tar -xJf canu-1.9.*.tar.xz && rm canu-1.9.Linux-amd64.tar.xz \
   && cd /opt && wget https://gite.lirmm.fr/lorma/lorma-releases/uploads/219b51b0d8d6ce378650743dc5f09024/lorma-bin_0.5_linux64.tar.gz \
   && gunzip lorma-bin_0.5_linux64.tar.gz && tar -xvf lorma-bin_0.5_linux64.tar && rm lorma-bin_0.5_linux64.tar \
@@ -54,6 +55,8 @@ ADD input /opt/kass/input/
 ADD bin /opt/kass/bin/
 ADD src /opt/kass/src/
 ENV CLASSPATH /opt/kass/bin/jars/slf4j-api-1.7.5.jar:/opt/kass/bin/jars/biojava4-core.jar:/opt/kass/bin/jars/dsh-commandline-1.1.jar:/opt/kass/bin/jars/super-csv.jar:$CLASSPATH
+ENV CLASSPATH /opt/guava/guava/target/guava-HEAD-jre-SNAPSHOT.jar:/opt/jars/commons-math3-3.6.1/commons-math3-3.6.1.jar:$CLASSPATH
+ENV CLASSPATH /opt/jars/guava-21.0.jar:$CLASSPATH
 
 # environment variables
 ENV PATH /opt/bin:$PATH
@@ -65,11 +68,14 @@ ENV PATH /opt/bbmap:$PATH
 ENV PATH /opt/canu-1.9/Linux-amd64/bin:$PATH
 ENV PATH /opt/FastQC:$PATH
 ENV PATH /root/miniconda2/bin:$PATH
-ENV PATH /usr/share/augustus/scripts:$PATH
+# docker
+ENV AUGUSTUS_CONFIG_PATH /root/augustus/config
+ENV PATH /root/augustus/bin:$PATH
+ENV PATH /root/augustus/config:$PATH
+#apt ENV PATH /usr/share/augustus/scripts:$PATH
+#apt ENV AUGUSTUS_CONFIG_PATH /usr/share/augustus/config
 ENV TMPDIR=/opt/kass/work
 ENV TMP=/opt/kass/work
-ENV CLASSPATH /opt/guava/guava/target/guava-HEAD-jre-SNAPSHOT.jar:/opt/jars/commons-math3-3.6.1/commons-math3-3.6.1.jar:$CLASSPATH
-ENV CLASSPATH /opt/jars/guava-21.0.jar:$CLASSPATH
 
 ENV PATH /opt/kass:$PATH
 ENV PATH /opt/kass/bin:$PATH
