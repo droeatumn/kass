@@ -4,7 +4,7 @@
  * Annotates strings in fasta files.
  * 
  * @author Dave Roe
- * 
+ * @todo remove full paths to augustus bin and scripts
  */
 
 params.home = baseDir
@@ -19,6 +19,7 @@ params.threads = "8"
 params.container = "droeatumn/kass:latest"
 params.nocontainer = "null"
 
+refAlleleDir = file("${home}/input/references/genes")
 refFile = file("${params.raw}/${params.reference}")
 featuresFile = file("${home}/input/features.txt") // markup features
 markerFile = file("${home}/input/cap.fasta") // capture markers
@@ -31,7 +32,7 @@ alignmentReads = Channel.create()
 readTap = reads.tap(alignmentReads).filter{ it[1] != refFile }
 //System.err.println readTap
 
-process annotateStructure {
+process structure {
     if(params.nocontainer == "null") { 
         container = params.container
     }
@@ -52,7 +53,7 @@ process annotateStructure {
     tuple s, file{"${s}*_markup.txt"} into markup
     tuple s, path{"${s}*_annotation.txt"} into annotation
     tuple s, path{"${s}*_annotation_strings.txt"} into annotationStrings
-    tuple s, path{"${s}*_features.fasta"} into features
+    tuple s, path{"${s}*_features.fasta"} into features mode flatten
     
   script:
     // todo: modularize this chunk
@@ -99,7 +100,119 @@ process annotateStructure {
     cut -f2 ${bamName}_annotation.txt | sort | uniq -c > ${bamName}_annotation_strings.txt
 
     """
-} // annotateStructure
+} // structure
+
+// makes the id_locus.psi files
+process blat {
+    if(params.nocontainer == "null") { 
+        container = "hiroko/blat-hg19:latest"
+    }
+    //publishDir params.output, mode: 'copy', overwrite: true
+    tag { s }
+
+  input:
+    set s, file(r) from features
+    path(refAlleleDir)
+  output:
+    tuple s, path(r), path{"${s}*.psi"} optional true into psi
+
+  script:
+    def nameNoExt = r.name.replaceAll("_features.fasta", "")
+    def intervening = nameNoExt.contains("3DP1-2DL4") // skip this one
+    def i = nameNoExt.lastIndexOf('_')
+    def locus = nameNoExt[i+1..-1]
+
+    """
+    if [ "${intervening}" == "false" ]; then
+        echo "${intervening}"
+        echo "blat: ${r} ${refAlleleDir}/KIR${locus}_nuc.fasta ${s}.psi"
+        blat ${r} ${refAlleleDir}/KIR${locus}_nuc.fasta ${s}_${locus}.psi
+    fi
+    """
+} // blat
+
+// makes the id_locus.gff files
+process hints {
+    if(params.nocontainer == "null") { 
+        container = "chrishah/premaker-plus:18"
+    }
+    //publishDir params.output, mode: 'copy', overwrite: true
+    tag { s }
+
+  input:
+    set s, file(r), file(p) from psi
+  output:
+    tuple s, path(r), path{"${s}_*.gff" } optional true into gff
+
+  script:
+    def nameNoExt = p.baseName
+    def i = nameNoExt.lastIndexOf('_')
+    def locus = nameNoExt[i+1..-1]
+    """
+    echo "blat2hints --in=${p} --out=${s}_${locus}.gff"
+    blat2hints.pl --in=${p} --out=${s}_${locus}.gff
+    """
+} // hints
+
+// runs the augustus gene annotation
+// requires ENV AUGUSTUS_CONFIG_PATH env to be set
+process augustus {
+    if(params.nocontainer == "null") { 
+        container = params.container
+    }
+    //publishDir params.output, mode: 'copy', overwrite: true
+    tag { s }
+
+  input:
+    set s, file(r), file(g) from gff
+    path(refAlleleDir)    
+  output:
+    tuple s, path(r), path("*_augustus.gff")  into alleles
+
+  script:
+    def nameNoExt = g.baseName
+    def i = nameNoExt.lastIndexOf('_')
+    def locus = nameNoExt[i+1..-1]
+    def fullLocus = "KIR" + locus
+    """
+    #echo "augustus ${s} ${g}"
+    #echo $PATH
+    /root/augustus/bin/augustus --species=human --UTR=on --strand=both --sample=100 --keep_viterbi=true --alternatives-from-sampling=false --genemodel=partial --hintsfile=${g} --extrinsicCfgFile=extrinsic.ME.cfg --protein=on --introns=on --start=on --stop=on --cds=on --codingseq=on --alternatives-from-evidence=true --proteinprofile=genes/${fullLocus}_prot_msa.prfl ${r} --outfile=${s}_${locus}_augustus.gtf 2> ${s}_augustus_err.txt
+    /root/augustus/scripts/gtf2gff.pl < ${s}_${locus}_augustus.gtf --out=${s}_${locus}_augustus.gff --gff3
+    """
+} // augustus
+
+// makes the feature table and annotates wrt IPD-KIR
+process alleles {
+    if(params.nocontainer == "null") { 
+        container = params.container
+    }
+    publishDir params.output, mode: 'copy', overwrite: true
+    tag { s }
+
+  input:
+    set s, file(r), file(g) from alleles // r is fasta, g is gff
+    path(refAlleleDir)
+  output:
+    path("*.gl.txt") into gl
+    path("*.ft.txt") into ft
+
+  script:
+    def nameNoExt = g.name.replaceAll("_augustus.gff", "")
+    def i = nameNoExt.lastIndexOf('_')
+    def locus = nameNoExt[i+1..-1]
+    def fullLocus = "KIR" + locus
+    """
+    #echo "interpret alleles ${s} ${g}"
+    #echo $CLASSPATH
+    which gff2ftGene.groovy
+    # cdsexons
+    /root/augustus/scripts/getAnnoFasta.pl --seqfile ${r} ${g} 2> ${s}_${locus}_getAnnoFasta_err.txt
+    # aa and codingseq
+    /root/augustus/scripts/getAnnoFastaFromJoingenes.py -g ${r} -3 ${g} -o ${s}_${locus}_augustus 2> ${s}_${locus}_getAnnoFastaFromJoingenes_err.txt
+    gff2ftGene.groovy -g ${fullLocus} -i ${refAlleleDir} -f ${g} -s ${r} -o ${s}_${fullLocus}.ft.txt -l ${s}_${fullLocus}.gl.txt 2> ${s}_${locus}.alleles_err.txt
+    """
+} // alleles
 
 def sample(Path path) {
   def name = path.getFileName().toString()
