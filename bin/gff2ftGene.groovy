@@ -52,10 +52,10 @@ import org.dishevelled.commandline.argument.*
 import groovy.transform.Field
 
 // things that may change per run
-debugging = 5 // TRACE=5, DEBUG=4, INFO=3, ERROR=2
+debugging = 3 // TRACE=1, WARN=2, DEBUG=3, INFO=4, ERROR=5
 @Field final String GENE_SYSTEM
 @Field final String GENE_NAME
-@Field final String KIR_NOMEN_VER = "IPD-KIR 2.9.0"
+@Field final String KIR_NOMEN_VER = "IPD-KIR 3.9.0"
 @Field final String HLA_NOMEN_VER = "IMGT/HLA 3.22.0"
 @Field String NOMEN_VER // tbd by input: KIR_NOMEN_VER or HLA_NOMEN_VER
 // for now, just all the possible sizes
@@ -76,7 +76,6 @@ if(GENE_NAME.contains("KIR")) {
     NOMEN_VER = HLA_NOMEN_VER
     GENE_SYSTEM = "HLA"
 }
-FileWriter outWriter = new FileWriter(outFile)
 Map<String,String> ipdProtMap // per gene
 Map<String,String> ipdNucMap
 Map<String,String> ipdGeneMap
@@ -85,34 +84,38 @@ Map<String,String> ipdGeneMap
 // description -> DNASequence unmodified from fasta file
 FastaReader<DNASequence, NucleotideCompound> parentReader = new FastaReader<DNASequence, NucleotideCompound>(seqFile, new PlainFastaHeaderParser<DNASequence, NucleotideCompound>(), new DNASequenceCreator(AmbiguityDNACompoundSet.getDNACompoundSet()))
 LinkedHashMap<String, DNASequence> descSeqMap = parentReader.process()
-if(debugging >= 3) { 
+if(debugging <= 3) { 
     err.println "input descriptions: " + descSeqMap.keySet().join(",")
 }
 
 // ID - ArrayList Expando (see processGFF)
 Map<String, ArrayList<Expando>> featureMap = processGFF(gffFile, ipdProtMap, ipdNucMap,
                                                         ipdGeneMap, descSeqMap)
+if(debugging <= 3) { 
+    err.println "${featureMap.size()} ids: " + featureMap.keySet().join(",")
+}
 
 // output
-err.println "done: ${featureMap.size()} id: " + featureMap.keySet().join(",")
-//err.println featureMap["unk_AFA09"].size()
-gbWriter = new PrintWriter(outFile.newOutputStream(), true)
-Boolean first = true
 featureMap.each { k, vList ->
+    //(id, gene, seqStartIndex, seqEndIndex) = parseDescription(desc)
+    outFile = new File(k + ".ft.txt")
+    FileWriter outWriter = new FileWriter(outFile)
+    gbWriter = new PrintWriter(outFile.newOutputStream(), true)
+    if(debugging <= 1) { 
+        err.println "outputting to ${outFile}"
+    }
     vList.each { v ->
-        if(debugging >= 5) { 
-            err.println "feature ${k} ${v}"
+        if(debugging <= 1) { 
+            err.println "output feature ${k} ${v}"
         }
-        if(first == true) {
-            outputGenBankSource(gbWriter, v)
-            gbWriter.println ">Feature ${v.id}"
-            first = false
-        }
-        correctAugustus(v, ipdNucMap, ipdGeneMap) // reannotate 2DP1 and 3DP1
+        outputGenBankSource(gbWriter, v)
+        gbWriter.println ">Feature ${v.id}"
+//todo        correctAugustus(v, ipdNucMap, ipdGeneMap) // reannotate 2DP1 and 3DP1
+        //err.println "after correctAugustus full match, gene now ${v.gene}, pcall now ${v.pcall}, ccall now ${v.ccall}, gcall now ${v.gcall}"//todo
         outputGenBank(v, ipdNucMap, gbWriter)
     }
+    gbWriter.close()
 } // each feature
-gbWriter.close()
 outputGLs(featureMap, outGLFile)
 // end main
 
@@ -200,7 +203,7 @@ def Map<String, ArrayList<Expando>> processGFF(File gffFile, Map<String,String> 
         */
         // TYPE, START, END, SCORE, PHASE, ATTRIBUTES
         String type = line[eFormat.TYPE]
-        if(debugging >= 5) { 
+        if(debugging <= 1) { 
             err.println "processGFF: line=${line}"
         }
         if(type != "transcription_start_site") {
@@ -213,7 +216,7 @@ def Map<String, ArrayList<Expando>> processGFF(File gffFile, Map<String,String> 
         ArrayList<Expando> toRemove = new ArrayList()
         if(previousEntryList != null) { 
             previousEntryList.each { previousEntry ->
-                if(debugging >= 5) {
+                if(debugging <= 1) {
                     if(previousEntry != null) { 
                         err.println "processGFF: previousEntry=${previousEntry}"
                         err.println "processGFF: previous ccall=${previousEntry.ccall ? previousEntry.ccall : "null"}"
@@ -224,7 +227,7 @@ def Map<String, ArrayList<Expando>> processGFF(File gffFile, Map<String,String> 
                 // todo: improve this?; use scores?
                 /* only needed if multiple transcripts are evaluated?
                  if((previousEntry == null) || (previousEntry.gcall == NEW_ALLELE)) { 
-                 if(debugging >= 4) {
+                 if(debugging <= 2) {
                  err.println "processGFF: adding ${eGene.gene}"
              }
                  geneMap[eGene.id] = eGene//todo
@@ -232,11 +235,11 @@ def Map<String, ArrayList<Expando>> processGFF(File gffFile, Map<String,String> 
                 if(GENE_SYSTEM == "KIR") {
                     (toAdd, toRemove) = newKIREntryIsBetter(previousEntry, eGene, e.exonStartTreeSet, e.exonEndTreeSet)
                 } // if KIR
-                if(debugging >= 5) { 
+                if(debugging <= 1) { 
                     err.println "processGFF ${eGene.gene}=${eGene.ccall}"
                 }
             }
-            if(debugging >= 4) { 
+            if(debugging <= 2) { 
                 err.println "${eGene.id} removing " + toRemove
                 err.println "${eGene.id} adding " + toAdd
             }
@@ -244,15 +247,15 @@ def Map<String, ArrayList<Expando>> processGFF(File gffFile, Map<String,String> 
             previousEntryList.addAll(toAdd)
         } else {
             ArrayList<Expando> al = new ArrayList()
-            if(debugging >= 4) { 
-                err.println "processGFF: ${eGene.id} adding " + eGene
+            if(debugging <= 2) { 
+                err.println "processGFF: adding ${eGene.id} " + eGene
             }
             al.add(eGene)
             geneMap[eGene.id] = al
         }
     } // each row
 
-    if(debugging >= 3) { 
+    if(debugging <= 3) { 
         err.println "processGFF: return ${geneMap.keySet().size()} IDs"
     }
     return geneMap
@@ -297,8 +300,8 @@ def Expando processGFFGene(Expando eFormat, ArrayList line,
         }
 
         String type = line[eFormat.TYPE]
-        if(debugging >= 5) {
-            err.println "type=${type}"
+        if(debugging <= 1) {
+            err.println "processGFFGene: type=${type}"
         }
         Integer start = line[eFormat.START].toInteger()
         Integer end = line[eFormat.END].toInteger()
@@ -310,8 +313,8 @@ def Expando processGFFGene(Expando eFormat, ArrayList line,
             (id, gene, seqStartIndex, seqEndIndex) = parseDescription(desc)
             e.id = id
             faSeq = descSeqMap[e.desc]
-            if(debugging >= 4) {
-                err.println "setting sequence for ID ${e.id}, desc=${desc}"
+            if(debugging <= 2) {
+                err.println "processGFFGene: setting sequence for ID ${e.id}, desc=${desc}"
             }
             if(faSeq == null) {
                 err.println "ERROR: couldn't find sequence in fasta for description ${e.desc}"
@@ -323,14 +326,14 @@ def Expando processGFFGene(Expando eFormat, ArrayList line,
             e.endSeq = seqEndIndex
             
             attributes = line[eFormat.ATTRIBUTES]
-            if(debugging >= 4) {
-                err.println "attributes=${attributes}"
+            if(debugging <= 2) {
+                err.println "processGFFGene: attributes=${attributes}"
             }
             // e.g., ID=g1.t1.tss1;Parent=g1.t1;
             (gene, transcript) = attributes.split('\\.')
             gene = gene.replaceFirst("ID=", "")
             ipdGene = GENE_NAME
-            if(debugging >= 3) {
+            if(debugging <= 3) {
                 err.println "processGFFGene: ${gene}.${transcript}"
                 err.println "processGFFGene: ipdGene=${ipdGene}"
             }
@@ -340,7 +343,7 @@ def Expando processGFFGene(Expando eFormat, ArrayList line,
         } else if(type == "CDS") { // or "exon"
             e.exonStartTreeSet.add(start)
             e.exonEndTreeSet.add(end)
-            if(debugging >= 3) {
+            if(debugging <= 3) {
                 err.println "processGFFGene: gene ${gene} exon ${exonIndex}: ${start}-${end}"
             }
             if(exonIndex == 0) {
@@ -349,14 +352,14 @@ def Expando processGFFGene(Expando eFormat, ArrayList line,
                                    ipdGeneMap, gffAAMap, gffCDSMap, gffCodingMap, e,
                                    pCallSet, cCallSet)
                 e = processGFFFullGene(gene, ipdGeneMap, e, gCallSet, cCallSet, pCallSet)
-                if(debugging >= 5) { 
+                if(debugging <= 1) { 
                     err.println "processGFFGene: pcall set, size now2 ${pCallSet.size()}"
                     err.println "processGFFGene: ccall set, size now2 ${cCallSet.size()}"
                 }
             }
             exonIndex++;
-        } else if(type == "tts") {
-            if(debugging >= 4) {
+        } else if(type == "transcription_end_site") {
+            if(debugging <= 2) {
                 err.println "processGFFGene: found tts"
             }
             break; // time to returnfrom the method
@@ -364,7 +367,7 @@ def Expando processGFFGene(Expando eFormat, ArrayList line,
         // noop; see break at "tts"
         line = listReader.read()
     } // each line
-    if(debugging >= 3) {
+    if(debugging <= 3) {
         err.println "processGFFGene: end of gff pCallSet size=${pCallSet.size()}, cCallSet size=${cCallSet.size()}"
     }            
     if(pCallSet.isEmpty()) {
@@ -383,7 +386,7 @@ def Expando processGFFGene(Expando eFormat, ArrayList line,
         e.gcall = gCallSet.sort().join("/")
     }
     
-    if(debugging >= 3) {
+    if(debugging <= 3) {
         err.println "processGFFGene: return ${e.pcall}, ${e.ccall}, ${e.gcall}"
     }
     return e
@@ -414,50 +417,47 @@ def Expando processGFFExon(String gene, String transcript,
                            LinkedHashMap<String, DNASequence> gffCodingMap,
                            Expando e, HashSet<String> pCallSet,
                            HashSet<String> cCallSet) {
-    if(debugging >= 5) {
+    if(debugging <= 1) {
         err.println "processGFFExon(gene=${gene}, transcript=${transcript})"
     }
     // check protein sequence (AUGUSTUS: .aa & IPD: _prot.fasta)
     m = "${gene}.${transcript}"
-    if(debugging >= 3) {
-        err.println "processGFFExon: checking ${m}"
-    }
     gffSeq = gffAAMap[m]
-    if(gffSeq == null) {
+    if((gffSeq == null) || (gffSeq == "")) {
         err.println "ERROR: processGFFExon: couldn't find ${m} in gffAAMap for ${e.id}"
         err.println "processGFFExon: gffAAMap keys " + gffAAMap.keySet().join(",")
     }
-/*    if(debugging >= 5) {
-        err.println "processGFFExon: ${gffSeq}"
- }*/
+    if(debugging <= 1) {
+        err.println "processGFFExon: seq ${m}=${gffSeq}"
+    }
 
     ipdProtMap.each { header, seq ->
-/*        if(debugging >= 4) {
-            err.println "processGFFExon: ${header}=${seq}"
-        }*/
+        if(debugging <= 1) {
+            err.println "processGFFExon: protein ${header}=${seq}"
+        }
         protTrue = sequenceEquals(gffSeq, seq)
         ipdGene = GENE_NAME
         // protein match *
         if(protTrue) {
             // check cDNA sequence (AUGUSTUS: .codingseq & IPD: _nuc.fasta)
             ipdGeneNew = ipdGene
-            if(debugging >= 4) { 
+            if(debugging <= 2) { 
                 err.println "processGFFExon: ipdGene 1 =${ipdGene}"
             }
             (ipdGeneNew, pcall) = truncateToProtein(header)
             e.gene = ipdGeneNew
             fullName = "${ipdGeneNew}*${pcall}"
-            if(debugging >= 3) {
+            if(debugging <= 3) {
                 err.println "processGFFExon: *protein match: ${fullName}"
             }
-            if(debugging >= 5) {
+            if(debugging <= 1) {
                 err.println "processGFFExon: gffSeq=${gffSeq}"
                 err.println "processGFFExon: ipd seq=${seq}"
             }
             pCallSet.add(fullName)
             // find the AUGUSTUS cDNA sequence
             gffCodingMap.each { cHeader, cSeq ->
-/*                if(debugging >= 4) {
+/*                if(debugging <= 2) {
                     err.println "processGFFExon: ${cHeader}"
                 }*/
                 if(cHeader.endsWith(m)) {
@@ -465,7 +465,7 @@ def Expando processGFFExon(String gene, String transcript,
                     if(ipdGeneRet != null) {
                         e.gene = ipdGeneRet
                         cCallSet.add(fullName)
-                        if(debugging >= 5) { 
+                        if(debugging <= 1) { 
                             err.println "processGFFExon: adding ${fullName} to ${e.id} ccall set, size now ${cCallSet.size()}"
                         }
                     }
@@ -474,7 +474,7 @@ def Expando processGFFExon(String gene, String transcript,
         } // protein match
     } // each ipd protein sequence for this gene
 
-    if(debugging >= 5) {
+    if(debugging <= 1) {
         err.println "processGFFExon: return ${e.pcall}, ${e.ccall}, pCallSet size=${pCallSet.size()}, cCallSet size=${cCallSet.size()}"
     }
     return e
@@ -493,7 +493,7 @@ def Expando processGFFExon(String gene, String transcript,
  */
 def Expando processGFFFullGene(String gene, Map<String, String> ipdGeneMap,
                                Expando e, Set gCallSet, Set cCallSet, Set pCallSet) {
-    if(debugging >= 5) {
+    if(debugging <= 1) {
         err.println "processGFFFullGene(id=${e.id}, gene=${gene})"
     }
     if(e.sequence == null) {
@@ -502,7 +502,7 @@ def Expando processGFFFullGene(String gene, Map<String, String> ipdGeneMap,
     }
     genSeq = e.sequence.getSubSequence(e.start5p, e.end3p).getViewedSequence()
     genSeqStr = genSeq.getSequenceAsString()
-    if(debugging >= 3) {        
+    if(debugging <= 3) {        
         err.println "processGFFFullGene: ${gene} sequence is " +
             "${genSeq.getLength()} bp long"
     }
@@ -513,7 +513,7 @@ def Expando processGFFFullGene(String gene, Map<String, String> ipdGeneMap,
         if(sequenceContains(seq, genSeq)) {
             (ipdGeneNew, gcall) = interpFullGene(header)
             fullName = "${ipdGeneNew}*${gcall}"
-            if(debugging >= 3) {
+            if(debugging <= 3) {
                 err.println "processGFFFullGene: *match on full gene: ${fullName}"
             }
             gCallSet.add(fullName)
@@ -533,7 +533,7 @@ def Expando processGFFFullGene(String gene, Map<String, String> ipdGeneMap,
         e.gcall = "${ipdGene}*${NEW_ALLELE}"
     }
     
-    if(debugging >= 5) {
+    if(debugging <= 1) {
         err.println "processGFFFullGene: return ${e.gcall}"
     }
     return e
@@ -552,14 +552,14 @@ def Expando processGFFFullGene(String gene, Map<String, String> ipdGeneMap,
  *                        Each is fasta header -> sequence
  */
 def ArrayList<Map>loadIPDMaps(File ipdDir, String ipdGene) {
-    if(debugging >= 5) {
+    if(debugging <= 1) {
         err.println "loadIPDMaps(ipdDir=${ipdDir}, ipdGene=${ipdGene})"
     }
     // the protein (amino acids) sequences (_prot.fasta)
     protFileName = ipdDir.getAbsolutePath() + "/${ipdGene}_prot.fasta"
     LinkedHashMap<String, ProteinSequence> protSeqMap =
         FastaReaderHelper.readFastaProteinSequence(new File(protFileName))
-    if(debugging >= 3) {        
+    if(debugging <= 3) {        
         err.println protSeqMap.keySet().size() + " proteins in ${protFileName}"
     }
 
@@ -567,7 +567,7 @@ def ArrayList<Map>loadIPDMaps(File ipdDir, String ipdGene) {
     nucFileName = ipdDir.getAbsolutePath() + "/${ipdGene}_nuc.fasta"
     LinkedHashMap<String, DNASequence> nucSeqMap =
         FastaReaderHelper.readFastaDNASequence(new File(nucFileName))
-    if(debugging >= 3) {        
+    if(debugging <= 3) {        
         err.println nucSeqMap.keySet().size() + " nuc sequences in ${nucFileName}"
     }
 
@@ -575,11 +575,11 @@ def ArrayList<Map>loadIPDMaps(File ipdDir, String ipdGene) {
     genFileName = ipdDir.getAbsolutePath() + "/${ipdGene}_gen.fasta"
     LinkedHashMap<String, DNASequence> genSeqMap =
         FastaReaderHelper.readFastaDNASequence(new File(genFileName))
-    if(debugging >= 3) {        
+    if(debugging <= 3) {        
         err.println genSeqMap.keySet().size() + " gene sequences in ${genFileName}"
     }
 
-    if(debugging >= 5) {
+    if(debugging <= 1) {
         err.println "loadIPDMaps: return"
     }
     return [protSeqMap, nucSeqMap, genSeqMap]
@@ -602,31 +602,31 @@ def List<LinkedHashMap> loadGFFMaps(gffFile) {
 
     // .aa
     protFileName = gffFile.getAbsolutePath().replace(".gff", ".aa")
-    if(debugging >= 3) { 
+    if(debugging <= 3) { 
         err.println "loadGFFMaps: loading ${protFileName}..."
     }
     gffAAMap = FastaReaderHelper.readFastaProteinSequence(new File(protFileName))
-    if(debugging >= 3) { 
+    if(debugging <= 3) { 
         err.println gffAAMap.keySet().size() + " items"
     }
 
     // .cdsexons
     nucFileName = gffFile.getAbsolutePath().replace(".gff", ".cdsexons")
-    if(debugging >= 3) { 
+    if(debugging <= 3) { 
         err.println "loadGFFMaps: loading ${nucFileName}..."
     }
     gffCDSMap = FastaReaderHelper.readFastaDNASequence(new File(nucFileName))
-    if(debugging >= 3) { 
+    if(debugging <= 3) { 
         err.println gffCDSMap.keySet().size() + " items"
     }
     
     // .codingseq
     nucFileName = gffFile.getAbsolutePath().replace(".gff", ".codingseq")
-    if(debugging >= 3) { 
+    if(debugging <= 3) { 
         err.println "loadGFFMaps: loading ${nucFileName}..."
     }
     gffCodingMap = FastaReaderHelper.readFastaDNASequence(new File(nucFileName))
-    if(debugging >= 3) { 
+    if(debugging <= 3) { 
         err.println gffCodingMap.keySet().size() + " items"
     }
     
@@ -644,7 +644,7 @@ def List<LinkedHashMap> loadGFFMaps(gffFile) {
  * @return ArrayList of nomenclature, ID (String), sequence start index (Integer), end index (Integer); or null values in the Array
  */
 def ArrayList parseDescription(String desc) {
-    if(debugging >= 4) {
+    if(debugging <= 2) {
         err.println "parseDescription(desc=${desc})"
     }
     ArrayList retArray = new ArrayList(3)
@@ -652,11 +652,12 @@ def ArrayList parseDescription(String desc) {
     // nomenclature_ID_gene_start-end
     // e.g., cB02~tB01_GU182355.1_2DL4_67155-80842
     // struct _ ID _ gene _ start-end
-    List descList = desc.split('_')
-    id = descList.pop()
-    gene = descList.pop()
-    locations = descList.join('_')
-    if(debugging >= 4) {
+    Queue<String> descQ = new LinkedList() as Queue
+    desc.split('_').each { descQ.push(it) }
+    locations = descQ.pop()
+    gene = descQ.pop()
+    id = descQ.join('_') + "_${gene}_${locations}"
+    if(debugging <= 2) {
         //err.println "matcher " + matcher 
         err.println "id " + id 
         err.println "gene " + gene 
@@ -667,7 +668,7 @@ def ArrayList parseDescription(String desc) {
     Integer start = sString.toInteger() 
     Integer end = eString.toInteger()
     
-    if(debugging >= 4) {
+    if(debugging <= 2) {
         err.println "parseDescription: id=${id}, gene=${gene}, " +
             "gene=${gene}, start=${start}, end=${end}"
     }
@@ -688,7 +689,7 @@ def ArrayList parseDescription(String desc) {
  *         if not found.
  */
 def ArrayList<String> truncateToCDNA(String allele) {
-    if(debugging >= 5) {
+    if(debugging <= 1) {
         err.println "truncateToCDNA(allele=${allele})"
     }
     //patternStr = "(.*)\\*(.*)"
@@ -698,7 +699,7 @@ def ArrayList<String> truncateToCDNA(String allele) {
       patternStr = patternStr.replace("2DL5", "2DL5[A-B]")
     }
     pattern = ~/${patternStr}/
-    if(debugging >= 4) {
+    if(debugging <= 2) {
         err.println "truncateToCDNA: ipd allele matching " +
             "${pattern} against ${allele}"
     }
@@ -710,14 +711,14 @@ def ArrayList<String> truncateToCDNA(String allele) {
             patternStr = patternStr.replace("KIR2DL5", "KIR2DL5[A-B]")
         }
         pattern = ~/${patternStr}/
-        if(debugging >= 4) {
+        if(debugging <= 2) {
             err.println "truncateToProtein: ipd allele matching " +
                 "${pattern} against ${allele}"
         }
         matcher = pattern.matcher(allele)
         if(matcher.size() == 0) {
 
-            if(debugging >= 3) {
+            if(debugging <= 3) {
                 err.println "truncateToCDNA: ipd allele matching " +
                     "${pattern} against ${allele}"
                 err.println "truncateToCDNA: return null, nothing found"
@@ -728,7 +729,7 @@ def ArrayList<String> truncateToCDNA(String allele) {
     locus = matcher[0][1]
     name = matcher[0][2]
 
-    if(debugging >= 4) {
+    if(debugging <= 2) {
         err.println "truncateToCDNA: locus=${locus}, name=${name}"
     }
  
@@ -747,7 +748,7 @@ def ArrayList<String> truncateToCDNA(String allele) {
             allele += ":${fields[2]}"
         }
     }
-    if(debugging >= 5) {
+    if(debugging <= 1) {
         err.println "truncateToCDNA: return ${allele}"
     }
     return [locus, allele]
@@ -766,7 +767,7 @@ def ArrayList<String> truncateToCDNA(String allele) {
  *         Returns null Strings if not found.
  */
 def ArrayList<String> interpFullGene(String allele) {
-    if(debugging >= 5) {
+    if(debugging <= 1) {
         err.println "interpFullGene(allele=${allele})"
     }
 
@@ -778,13 +779,13 @@ def ArrayList<String> interpFullGene(String allele) {
     }
     patternStr = "(.*)_(.*)"
     pattern = ~/${patternStr}/
-    if(debugging >= 4) {
+    if(debugging <= 2) {
         err.println "interpFullGene: ipd allele matching " +
             "${pattern} against ${allele}"
     }
     matcher = pattern.matcher(allele)
     if(matcher.size() == 0) {
-        if(debugging >= 3) {
+        if(debugging <= 3) {
             err.println "interpFullGene: ipd allele matching " +
                 "${pattern} against ${allele}"
             err.println "interpFullGene: return null, nothing found"
@@ -795,13 +796,13 @@ def ArrayList<String> interpFullGene(String allele) {
     locus = matcher[0][1]
     name = matcher[0][2]
 
-    if(debugging >= 4) {
+    if(debugging <= 2) {
         err.println "interpFullGene: locus=${locus}, name=${name}"
     }
     /*if(!locus.contains("KIR")) {
         locus = "KIR${locus}"
     }*/
-    if(debugging >= 5) {
+    if(debugging <= 1) {
         err.println "interpFullGene: return ${allele}"
     }
     return [locus, name]
@@ -821,7 +822,7 @@ def ArrayList<String> interpFullGene(String allele) {
  *         if not found.
  */
 def ArrayList<String> truncateToProtein(String allele) {
-    if(debugging >= 5) {
+    if(debugging <= 1) {
         err.println "truncateToProtein(allele=${allele})"
     }
     // e.g. KIR2DP1_00101
@@ -831,7 +832,7 @@ def ArrayList<String> truncateToProtein(String allele) {
         patternStr = patternStr.replace("KIR2DL5", "KIR2DL5[A-B]")
     }
     pattern = ~/${patternStr}/
-    if(debugging >= 4) {
+    if(debugging <= 2) {
         err.println "truncateToProtein: ipd allele matching " +
             "${pattern} against ${allele}"
     }
@@ -843,13 +844,13 @@ def ArrayList<String> truncateToProtein(String allele) {
             patternStr = patternStr.replace("KIR2DL5", "KIR2DL5[A-B]")
         }
         pattern = ~/${patternStr}/
-        if(debugging >= 4) {
+        if(debugging <= 2) {
             err.println "truncateToProtein: ipd allele matching " +
                 "${pattern} against ${allele}"
         }
         matcher = pattern.matcher(allele)
         if(matcher.size() == 0) {
-            if(debugging >= 3) {
+            if(debugging <= 3) {
                 err.println "truncateToProtein: ipd allele matching " +
                     "${pattern} against ${allele}"
                 err.println "truncateToProtein: return null, nothing found"
@@ -861,7 +862,7 @@ def ArrayList<String> truncateToProtein(String allele) {
     locus = matcher[0][1]
     name = matcher[0][2]
 
-    if(debugging >= 4) {
+    if(debugging <= 2) {
         err.println "truncateToProtein: locus=${locus}, name=${name}"
     }
  
@@ -873,7 +874,7 @@ def ArrayList<String> truncateToProtein(String allele) {
         fields = name.split(':')
         allele = "${fields[0]}:${fields[1]}"
     }
-    if(debugging >= 5) {
+    if(debugging <= 1) {
         err.println "truncateToProtein: return [$locus, ]${allele}]"
     }
     return [locus, allele]
@@ -887,7 +888,7 @@ def ArrayList<String> truncateToProtein(String allele) {
  * @todo rename: not gl any more
  */
 def void outputGLs(Map<String, Expando> featureMap, File outGLFile) {
-    if(debugging >= 5) {
+    if(debugging <= 1) {
         err.println "outputGLs(outGLFile=${outGLFile.getName()})"
     }
     FileWriter outGLWriter = new FileWriter(outGLFile)
@@ -900,7 +901,7 @@ def void outputGLs(Map<String, Expando> featureMap, File outGLFile) {
     }
         
     outGLWriter.close()
-    if(debugging >= 5) {
+    if(debugging <= 1) {
         err.println "outputGLs: return"
     }    
 } // outputGLs
@@ -953,7 +954,7 @@ def ArrayList handleArgs(String[] args) {
  * @param ipdNucMap Maps of description -> sequence for '_nuc.fasta' file from IPD-KIR
  */
 def void outputGenBank(Expando query, Map<String,String> ipdNucMap, PrintWriter gbOut) {
-    if(debugging >= 5) {
+    if(debugging <= 1) {
         err.println "outputGenBank(${query.gene})"
     }
     Integer startIndex = new Integer(query.startSeq)
@@ -990,7 +991,7 @@ def void outputGenBank(Expando query, Map<String,String> ipdNucMap, PrintWriter 
     // mRNA ('exon' in GFF)
     i = 0
     numExons = query.exonStartTreeSet.size()
-    if(debugging >= 4) {
+    if(debugging <= 2) {
         err.println "outputGenBank: start mRNA"
         err.println "outputGenBank: ${numExons} exons"
     }
@@ -1005,7 +1006,7 @@ def void outputGenBank(Expando query, Map<String,String> ipdNucMap, PrintWriter 
     Iterator eiter = query.exonEndTreeSet.iterator()
     for(i=0; siter.hasNext(); i++) { 
         //todo(remove) for(i=0; i < numExons; i++) {
-        if(debugging >= 4) {
+        if(debugging <= 2) {
             err.println "outputGenBank: exon ${i}"
         }
         //start = query.exonStartMap[i] ? query.exonStartMap[i] : 0
@@ -1027,7 +1028,7 @@ issue with e.g., 2DP1
             start += startIndex
             end += startIndex
         }
-        if(debugging >= 4) {
+        if(debugging <= 2) {
             err.println "outputGenBank: ${start}-${end} = ${length}"
         }
 pseudo
@@ -1051,7 +1052,7 @@ pseudo
     // CDS ('cds' in gff)
     if(!(query.gene =~ /\dDP/)) { // skip the pseudo genes
         // output the exon regions containing the coding sequence
-        if(debugging >= 4) {
+        if(debugging <= 2) {
             err.println "outputGenBank: start CDS"
         }
         outputLength = 0
@@ -1076,7 +1077,7 @@ pseudo
             // warn about KIR lengths here
             if(GENE_SYSTEM == "KIR") { // todo: implement for HLA too
                 if(!KIR_EXON_SIZES.contains(length)) {
-                    if(debugging >= 2) { 
+                    if(debugging <= 4) { 
                         err.println "WARNING: exon ${i} length ${length} (${start}-${end}) for ${query.id}/${query.gene}"
                     }
                 }
@@ -1090,7 +1091,7 @@ pseudo
         gbOut.println "\t\t\tcodon_start\t1"
     } // CDS
 
-    if(debugging >= 5) {
+    if(debugging <= 1) {
         err.println "outputGenBank: return"
     }
     return
@@ -1131,7 +1132,7 @@ def void outputGenBankSource(PrintWriter gbOut, Expando query) {
 } // outputGenBankSource
 
 def void outputProduct(String gene, PrintWriter gbOut) {
-    if(debugging >= 5) {
+    if(debugging <= 1) {
         err.println "outputProduct(gene=${gene})"
     }    
 
@@ -1153,7 +1154,7 @@ def void outputProduct(String gene, PrintWriter gbOut) {
     
 
     gbOut.println "\t\t\tproduct\tkiller cell immunoglobulin-like receptor ${domains} domains ${length} ${number}"
-    if(debugging >= 5) {
+    if(debugging <= 1) {
         err.println "outputProduct: return"
     }    
     return
@@ -1163,8 +1164,9 @@ def void outputProduct(String gene, PrintWriter gbOut) {
 def Boolean sequenceEquals(org.biojava.nbio.core.sequence.template.Sequence a,
                            org.biojava.nbio.core.sequence.template.Sequence b) {
     Boolean ret = false
-    astr = a.getSequenceAsString()
-    bstr = b.getSequenceAsString()
+    // augustus puts a '*' at the end of proteins
+    astr = a.getSequenceAsString().replaceAll("\\*", "")
+    bstr = b.getSequenceAsString().replaceAll("\\*", "")
     bstrrc = bstr
     if(b.class =~ /Protein/) { // protein, not DNA (or RNA)
         // IPD-KIR sequences have trailing 'X's; remove them if present
@@ -1175,7 +1177,7 @@ def Boolean sequenceEquals(org.biojava.nbio.core.sequence.template.Sequence a,
     }
 
     if(astr.equalsIgnoreCase(bstr) || astr.equalsIgnoreCase(bstrrc)) {
-        if(debugging >= 5) {
+        if(debugging <= 1) {
             err.println "sequenceEquals: found match"
         }
         ret = true
@@ -1238,7 +1240,7 @@ def Boolean sequenceContains(org.biojava.nbio.core.sequence.template.Sequence a,
  */
 def List<List<Expando>> newKIREntryIsBetter(Expando previousEntry, Expando eGene, TreeSet<String> exonStartTreeSet,
                                 TreeSet<String> exonEndTreeSet) {
-    if(debugging >= 5) { 
+    if(debugging <= 1) { 
         err.println "newKIREntryIsBetter()"
     }
     Boolean ret = false
@@ -1255,7 +1257,7 @@ def List<List<Expando>> newKIREntryIsBetter(Expando previousEntry, Expando eGene
     Integer geneStart = eGene.startSeq
     Integer prevEnd = previousEntry.endSeq
     Integer geneEnd = eGene.endSeq
-    if(debugging >= 5) { 
+    if(debugging <= 1) { 
         err.println "newKIREntryIsBetter: previous id=${pid}, eGene id=${gid}, previous gene=${pgene}, eGene gene=${ggene}, previousSize=${previousSize}, newSize=${newSize}"
         err.println "newKIREntryIsBetter: prevStart=${prevStart}, prevEnd=${prevEnd}, geneStart=${geneStart}, geneEnd=${geneEnd}"
     }
@@ -1264,7 +1266,7 @@ def List<List<Expando>> newKIREntryIsBetter(Expando previousEntry, Expando eGene
     //old if((pid != gid) || (pgene != ggene) || ((prevStart >= geneStart) && (prevStart <= geneEnd)) || ((geneStart >= prevStart) && (geneStart <= prevEnd)) ) {
     if((pid == gid) &&
        ((prevStart >= geneStart) && (prevStart <= geneEnd)) || ((geneStart >= prevStart) && (geneStart <= prevEnd)) ) {
-        if(debugging >= 3) {
+        if(debugging <= 3) {
             err.println ((prevStart >= geneStart) && (prevStart <= geneEnd))
             err.println ((geneStart >= prevStart) && (geneStart <= prevEnd))
             err.println "newKIREntryIsBetter: same id/gene pair: previous id=${pid}, eGene id=${gid}, previous gene=${pgene}, eGene gene=${ggene}"
@@ -1290,7 +1292,7 @@ def List<List<Expando>> newKIREntryIsBetter(Expando previousEntry, Expando eGene
                 toRemove.add(previousEntry)
             }
         } // each exon
-        if(debugging >= 5) { 
+        if(debugging <= 1) { 
             err.println "newKIREntryIsBetter: return; toAdd=${toAdd}, toRemove=${toRemove}"
         }
         return [toAdd, toRemove]
@@ -1298,7 +1300,7 @@ def List<List<Expando>> newKIREntryIsBetter(Expando previousEntry, Expando eGene
         toAdd.add(eGene)
     }
     
-    if(debugging >= 5) { 
+    if(debugging <= 1) { 
         err.println "newKIREntryIsBetter: return; toAdd=${toAdd}, toRemove=${toRemove}"
     }
     return [toAdd, toRemove]
@@ -1310,7 +1312,7 @@ def List<List<Expando>> newKIREntryIsBetter(Expando previousEntry, Expando eGene
  * @return List with 3 values:  ipdGeneName(String), ccall(String), fullName(String)
  */
 def ArrayList<String> getcDNAMatches(DNASequence cSeq, Map<String, String> ipdNucMap) { 
-    if(debugging >= 5) {
+    if(debugging <= 1) {
         err.println "getcDNAMatches(cSeq=${cSeq})"
     }
     String ipdGeneNew
@@ -1322,14 +1324,14 @@ def ArrayList<String> getcDNAMatches(DNASequence cSeq, Map<String, String> ipdNu
          e.g., KIR2DL4*0080203
          */
         if(sequenceContains(cSeq, nucSeq)) { // cDNA match *
-            if(debugging >= 4) {
+            if(debugging <= 2) {
                 err.println "getcDNAMatches: found *cDNA match: ${nucHeader}"
             }
             (ipdGeneNew, ccall) = truncateToCDNA(nucHeader)
             fullName = "${ipdGeneNew}*${ccall}"
         } // if cDNA match
     } // each IPD/IMGA _nuc sequence
-    if(debugging >= 5) {
+    if(debugging <= 1) {
         err.println "getcDNAMatches: return: [ipdGeneNew=${ipdGeneNew}, ccall=${ccall}, fullName=${fullName}]"
     }
     return [ipdGeneNew, ccall, fullName]
@@ -1346,7 +1348,7 @@ def ArrayList<String> getcDNAMatches(DNASequence cSeq, Map<String, String> ipdNu
  */ 
 def void correctAugustus(Expando v, Map<String, String> ipdNucMap, Map<String, String> ipdGeneMap) {
     gene = v.gene
-    if(debugging >= 5) {
+    if(debugging <= 1) {
         err.println "correctAugustus(ID=${v.id}, gene=${v.gene})"
     }
 /*    if(!gene.contains("2DP1") && !gene.contains("3DP1")) {
@@ -1355,7 +1357,7 @@ def void correctAugustus(Expando v, Map<String, String> ipdNucMap, Map<String, S
 */
     cDNANew = new String() // the new cDNA sequence
     numExons = v.exonStartTreeSet.size()
-    if(debugging >= 4) {
+    if(debugging <= 2) {
         err.println "correctAugustus: ${numExons} exons"
     }
     // record the changes (indexes) to be made to exonStartTreeSet and exonEndTreeSet
@@ -1371,7 +1373,7 @@ def void correctAugustus(Expando v, Map<String, String> ipdNucMap, Map<String, S
         Integer length = end - start + 1
         newStart = start
         newEnd = end
-        if(debugging >= 4) {
+        if(debugging <= 2) {
             err.println "correctAugustus: exon ${i}, start=${start}, end=${end}, length=${length}"
         }
 
@@ -1380,7 +1382,7 @@ def void correctAugustus(Expando v, Map<String, String> ipdNucMap, Map<String, S
         if(v.gene.contains("2DP1") && (length == 241)) {//todo: move this
             startToRemove.add(start)
             endToRemove.add(end)
-            if(debugging >= 4) {
+            if(debugging <= 2) {
                 err.println "correctAugustus: exon ${i}, removing start=${start}, end=${end}, length=${length}"
             }
         }*/
@@ -1396,7 +1398,7 @@ def void correctAugustus(Expando v, Map<String, String> ipdNucMap, Map<String, S
                     err.println "correctAugustus: WARNING: couldn't find 3' UTR in 2DP1 for ${v.id}"
                 } else { 
                     newEnd = end3p + seq.length()
-                    if(debugging >= 4) {
+                    if(debugging <= 2) {
                         err.println "correctAugustus: 2DP1 3' UTR=${end3p}"
                     }
                     v.end3p = newEnd
@@ -1407,7 +1409,7 @@ def void correctAugustus(Expando v, Map<String, String> ipdNucMap, Map<String, S
             } else if(v.gene.contains("3DP1")) { 
                 newEnd = start + 294 - 1
             }
-            if(debugging >= 4) {
+            if(debugging <= 2) {
                 err.println "correctAugustus: removing ${start}, ${end}"
                 err.println "correctAugustus: adding ${newStart}, ${newEnd}"
             }
@@ -1427,7 +1429,7 @@ def void correctAugustus(Expando v, Map<String, String> ipdNucMap, Map<String, S
             startToRemove.add(start)
             startToAdd.add(newStart)
         } else if(!KIR_EXON_SIZES.contains(length)) {
-            if(debugging >= 2) { 
+            if(debugging <= 4) { 
                 err.println "correctAugustus WARNING: skipping exon ${i} length ${length} (${end}-${start}) for ${v.gene}, ${v.id}"
             }
             startToRemove.add(start)
@@ -1449,7 +1451,7 @@ def void correctAugustus(Expando v, Map<String, String> ipdNucMap, Map<String, S
             start8++
             end8 = start8 + 52
             length8 = end8 - start8 + 1
-            if(debugging >= 4) {
+            if(debugging <= 2) {
                 err.println "correctAugustus: adding exon 8 ${start8}\t${end8}\t${length8} bp"
             }
             startToAdd.add(start8)
@@ -1472,7 +1474,7 @@ def void correctAugustus(Expando v, Map<String, String> ipdNucMap, Map<String, S
         Integer start = siter3.next()
         Integer end = eiter3.next()
         l3 = end - start + 1
-        if(debugging >= 4) {
+        if(debugging <= 2) {
             err.println "correctAugustus: exon ${i} ${start}\t${end}\t${l3} bp"
         }
         cDNANew += v.sequence.getSequenceAsString()[start-1..end-1]
@@ -1487,6 +1489,9 @@ def void correctAugustus(Expando v, Map<String, String> ipdNucMap, Map<String, S
         v.ccall = fullName
         (ipdGeneNew, pcall) = truncateToProtein(fullName)
         v.pcall = "${ipdGeneNew}*${pcall}"
+        if(debugging <= 2) {
+            err.println "correctAugustus: after cDNA match, gene now ${v.gene}, pcall now ${v.pcall}, ccall now ${v.ccall}"
+        }
     }
     // annotate wrt full gene
     ipdGeneMap.each { header, seq ->
@@ -1496,8 +1501,8 @@ def void correctAugustus(Expando v, Map<String, String> ipdNucMap, Map<String, S
             (ipdGeneNew, gcall) = interpFullGene(header)
             v.gene = ipdGeneNew
             fullName = "${ipdGeneNew}*${gcall}"
-            if(debugging >= 3) {
-                err.println "processGFFFullGene: *match on full gene: ${fullName}"
+            if(debugging <= 3) {
+                err.println "correctAugustus: *match on full gene: ${fullName}"
             }
             v.gcall = fullName
             (ipdGeneNew, ccall) = truncateToCDNA(header)
@@ -1506,6 +1511,9 @@ def void correctAugustus(Expando v, Map<String, String> ipdNucMap, Map<String, S
             (ipdGeneNew, pcall) = truncateToProtein(fullName)
             fullName = "${ipdGeneNew}*${pcall}"
             v.pcall = fullName
+            if(debugging <= 2) {
+                err.println "correctAugustus: after full match, gene now ${v.gene}, pcall now ${v.pcall}, ccall now ${v.ccall}, gcall now ${v.gcall}"
+            }
         }
     } // each ipd/imgt full sequence
 
