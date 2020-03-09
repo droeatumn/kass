@@ -7,7 +7,7 @@
  *   2. Three GL strings containg IMGT/IPD interpretations: 
  *       protein, cDNA, full gene.
  *
- * e.g., gff2ftGene.groovy -g KIR2DL4 -i ~/doc/KIRDB/2.8.0/fasta/ -f all_2DL4/augustus.gtf -s all_seqs_v3_2DL4_features_short.fasta -o seqs_v3_all_2DL4.ft.txt -l seqs_v3_all_2DL4.gl.txt 2> seqs_v3_all_2DL4.ft_err.txt
+ * e.g., gff2ftGene.groovy -g KIR2DL4 -i ~/doc/KIRDB/2.8.0/fasta/ -f all_2DL4/augustus.gff -s all_seqs_v3_2DL4_features_short.fasta -o seqs_v3_all_2DL4.ft.txt -l seqs_v3_all_2DL4.gl.txt 2> seqs_v3_all_2DL4.ft_err.txt
 
  * main arguments:
  *   -h  display help message [optional]
@@ -55,7 +55,7 @@ import groovy.transform.Field
 debugging = 5 // TRACE=5, DEBUG=4, INFO=3, ERROR=2
 @Field final String GENE_SYSTEM
 @Field final String GENE_NAME
-@Field final String KIR_NOMEN_VER = "IPD-KIR 2.8.0"
+@Field final String KIR_NOMEN_VER = "IPD-KIR 2.9.0"
 @Field final String HLA_NOMEN_VER = "IMGT/HLA 3.22.0"
 @Field String NOMEN_VER // tbd by input: KIR_NOMEN_VER or HLA_NOMEN_VER
 // for now, just all the possible sizes
@@ -203,7 +203,7 @@ def Map<String, ArrayList<Expando>> processGFF(File gffFile, Map<String,String> 
         if(debugging >= 5) { 
             err.println "processGFF: line=${line}"
         }
-        if(type != "transcript") {
+        if(type != "transcription_start_site") {
             continue;
         }
         Expando eGene = processGFFGene(eFormat, line, listReader, descSeqMap, gffAAMap,
@@ -244,7 +244,9 @@ def Map<String, ArrayList<Expando>> processGFF(File gffFile, Map<String,String> 
             previousEntryList.addAll(toAdd)
         } else {
             ArrayList<Expando> al = new ArrayList()
-            err.println "processGFF: ${eGene.id} adding " + eGene//todo
+            if(debugging >= 4) { 
+                err.println "processGFF: ${eGene.id} adding " + eGene
+            }
             al.add(eGene)
             geneMap[eGene.id] = al
         }
@@ -300,13 +302,13 @@ def Expando processGFFGene(Expando eFormat, ArrayList line,
         }
         Integer start = line[eFormat.START].toInteger()
         Integer end = line[eFormat.END].toInteger()
-        if(type == "transcript") { // this precedes 'tss'
+        if(type == "transcription_start_site") { // this precedes 'tss'
             // get the ID, and location of the sequence within the haplotype
             // e.g., cB02~tB01_GU182355.1_2DL4_67155-80842
             desc = line[eFormat.DESC]
             e.desc = desc
-            (nomen, id, gene, seqStartIndex, seqEndIndex) = parseDescription(desc)
-            e.id = nomen + "_" + id
+            (id, gene, seqStartIndex, seqEndIndex) = parseDescription(desc)
+            e.id = id
             faSeq = descSeqMap[e.desc]
             if(debugging >= 4) {
                 err.println "setting sequence for ID ${e.id}, desc=${desc}"
@@ -324,7 +326,9 @@ def Expando processGFFGene(Expando eFormat, ArrayList line,
             if(debugging >= 4) {
                 err.println "attributes=${attributes}"
             }
+            // e.g., ID=g1.t1.tss1;Parent=g1.t1;
             (gene, transcript) = attributes.split('\\.')
+            gene = gene.replaceFirst("ID=", "")
             ipdGene = GENE_NAME
             if(debugging >= 3) {
                 err.println "processGFFGene: ${gene}.${transcript}"
@@ -337,7 +341,7 @@ def Expando processGFFGene(Expando eFormat, ArrayList line,
             e.exonStartTreeSet.add(start)
             e.exonEndTreeSet.add(end)
             if(debugging >= 3) {
-                err.println "processGFFGene: exon ${exonIndex}: ${start}-${end}"
+                err.println "processGFFGene: gene ${gene} exon ${exonIndex}: ${start}-${end}"
             }
             if(exonIndex == 0) {
                 // process all the exons
@@ -597,7 +601,7 @@ def List<LinkedHashMap> loadGFFMaps(gffFile) {
     LinkedHashMap<String, DNASequence> gffCodingMap
 
     // .aa
-    protFileName = gffFile.getAbsolutePath().replace(".gtf", ".aa")
+    protFileName = gffFile.getAbsolutePath().replace(".gff", ".aa")
     if(debugging >= 3) { 
         err.println "loadGFFMaps: loading ${protFileName}..."
     }
@@ -607,7 +611,7 @@ def List<LinkedHashMap> loadGFFMaps(gffFile) {
     }
 
     // .cdsexons
-    nucFileName = gffFile.getAbsolutePath().replace(".gtf", ".cdsexons")
+    nucFileName = gffFile.getAbsolutePath().replace(".gff", ".cdsexons")
     if(debugging >= 3) { 
         err.println "loadGFFMaps: loading ${nucFileName}..."
     }
@@ -617,7 +621,7 @@ def List<LinkedHashMap> loadGFFMaps(gffFile) {
     }
     
     // .codingseq
-    nucFileName = gffFile.getAbsolutePath().replace(".gtf", ".codingseq")
+    nucFileName = gffFile.getAbsolutePath().replace(".gff", ".codingseq")
     if(debugging >= 3) { 
         err.println "loadGFFMaps: loading ${nucFileName}..."
     }
@@ -640,30 +644,20 @@ def List<LinkedHashMap> loadGFFMaps(gffFile) {
  * @return ArrayList of nomenclature, ID (String), sequence start index (Integer), end index (Integer); or null values in the Array
  */
 def ArrayList parseDescription(String desc) {
+    if(debugging >= 4) {
+        err.println "parseDescription(desc=${desc})"
+    }
     ArrayList retArray = new ArrayList(3)
 
     // nomenclature_ID_gene_start-end
     // e.g., cB02~tB01_GU182355.1_2DL4_67155-80842
     // struct _ ID _ gene _ start-end
-    patternStr = ~/(.*?)_(.*?)_(.*?)_(.*)/
+    List descList = desc.split('_')
+    id = descList.pop()
+    gene = descList.pop()
+    locations = descList.join('_')
     if(debugging >= 4) {
-        err.println "parseDescription:  matching ${patternStr} against ${desc}"
-    }
-    matcher = patternStr.matcher(desc)
-    if(matcher.size() == 0) {
-        if(debugging >= 3) {
-            err.println "parseDescription:  matching ${patternStr} against ${desc}"
-            err.println "parseDescription: return null, nothing found"
-        }
-        return [null, null, null, null, null, null]
-    }
-    nomenclature = matcher[0][1]
-    id = matcher[0][2]
-    gene = matcher[0][3]
-    locations = matcher[0][4]
-    if(debugging >= 4) {
-        err.println "matcher " + matcher 
-        err.println "nomenclature " + nomenclature 
+        //err.println "matcher " + matcher 
         err.println "id " + id 
         err.println "gene " + gene 
         err.println "locations " + locations 
@@ -674,11 +668,11 @@ def ArrayList parseDescription(String desc) {
     Integer end = eString.toInteger()
     
     if(debugging >= 4) {
-        err.println "parseDescription: nomenclature=${nomenclature}, id=${id}, gene=${gene}, " +
+        err.println "parseDescription: id=${id}, gene=${gene}, " +
             "gene=${gene}, start=${start}, end=${end}"
     }
 
-    return [nomenclature, id, gene, start, end]
+    return [id, gene, start, end]
 } // parseDescription
 
 /*
