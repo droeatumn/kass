@@ -110,8 +110,10 @@ featureMap.each { k, vList ->
         }
         outputGenBankSource(gbWriter, v)
         gbWriter.println ">Feature ${v.id}"
-//todo        correctAugustus(v, ipdNucMap, ipdGeneMap) // reannotate 2DP1 and 3DP1
-        //err.println "after correctAugustus full match, gene now ${v.gene}, pcall now ${v.pcall}, ccall now ${v.ccall}, gcall now ${v.gcall}"//todo
+        correctAugustus(v, ipdNucMap, ipdGeneMap) // reannotate 2DP1 and 3DP1
+        if(debugging <= 2) { 
+            err.println "after correctAugustus full match, gene now ${v.gene}, pcall now ${v.pcall}, ccall now ${v.ccall}, gcall now ${v.gcall}"
+        }
         outputGenBank(v, ipdNucMap, gbWriter)
     }
     gbWriter.close()
@@ -158,7 +160,7 @@ def Expando initGFF() {
  *   desc: the description of the sequence from the fasta
  *   sequence; the full sequence from the fasta as DNASequence
  *   startSeq: 5' start of the input sequence (1-based index)
- *   startSeq: 3' end of the input sequence (1-based index)
+ *   endSeq: 3' end of the input sequence (1-based index)
  *   start5p: 5' start of the KIR gene (1-based index)
  *   end3p: 3' end of the KIR gene (1-based index)
  *   pcall: the ultimate protein call/interpretation as a gl string (=~ 'NEW' if new)
@@ -308,9 +310,12 @@ def Expando processGFFGene(Expando eFormat, ArrayList line,
         if(type == "transcription_start_site") { // this precedes 'tss'
             // get the ID, and location of the sequence within the haplotype
             // e.g., cB02~tB01_GU182355.1_2DL4_67155-80842
+            e.start5p = start
             desc = line[eFormat.DESC]
             e.desc = desc
             (id, gene, seqStartIndex, seqEndIndex) = parseDescription(desc)
+            e.startSeq = seqStartIndex
+            e.endSeq = seqEndIndex
             e.id = id
             faSeq = descSeqMap[e.desc]
             if(debugging <= 2) {
@@ -322,8 +327,6 @@ def Expando processGFFGene(Expando eFormat, ArrayList line,
                 System.exit(1)
             }
             e.sequence = faSeq // DNASequence
-            e.startSeq = seqStartIndex
-            e.endSeq = seqEndIndex
             
             attributes = line[eFormat.ATTRIBUTES]
             if(debugging <= 2) {
@@ -337,14 +340,12 @@ def Expando processGFFGene(Expando eFormat, ArrayList line,
                 err.println "processGFFGene: ${gene}.${transcript}"
                 err.println "processGFFGene: ipdGene=${ipdGene}"
             }
-            e.start5p = start
-            e.end3p = end
             e.gene = GENE_NAME
         } else if(type == "CDS") { // or "exon"
             e.exonStartTreeSet.add(start)
             e.exonEndTreeSet.add(end)
             if(debugging <= 3) {
-                err.println "processGFFGene: gene ${gene} exon ${exonIndex}: ${start}-${end}"
+                err.println "processGFFGene: gene ${gene} exon ${exonIndex}"
             }
             if(exonIndex == 0) {
                 // process all the exons
@@ -359,6 +360,7 @@ def Expando processGFFGene(Expando eFormat, ArrayList line,
             }
             exonIndex++;
         } else if(type == "transcription_end_site") {
+            e.end3p = end
             if(debugging <= 2) {
                 err.println "processGFFGene: found tts"
             }
@@ -1228,6 +1230,9 @@ def Boolean sequenceContains(org.biojava.nbio.core.sequence.template.Sequence a,
        astr.toLowerCase().contains(bstrrc.toLowerCase()) ||
        bstr.toLowerCase().contains(astr.toLowerCase()) ||
        bstrrc.toLowerCase().contains(astr.toLowerCase())) {
+        if(debugging <= 1) { 
+            err.println "sequenceContains: true for ${astr} and ${bstr}"
+        }
         ret = true
     }
     return ret
@@ -1351,12 +1356,12 @@ def void correctAugustus(Expando v, Map<String, String> ipdNucMap, Map<String, S
     if(debugging <= 1) {
         err.println "correctAugustus(ID=${v.id}, gene=${v.gene})"
     }
-/*    if(!gene.contains("2DP1") && !gene.contains("3DP1")) {
+    if(!gene.contains("2DP1") && !gene.contains("3DP1")) {
         return
     }
-*/
+
     cDNANew = new String() // the new cDNA sequence
-    numExons = v.exonStartTreeSet.size()
+    numExons = v.exonStartTreeSet.size()//left off: wrong here
     if(debugging <= 2) {
         err.println "correctAugustus: ${numExons} exons"
     }
@@ -1492,6 +1497,9 @@ def void correctAugustus(Expando v, Map<String, String> ipdNucMap, Map<String, S
         if(debugging <= 2) {
             err.println "correctAugustus: after cDNA match, gene now ${v.gene}, pcall now ${v.pcall}, ccall now ${v.ccall}"
         }
+    }
+    if(debugging <= 2) {
+        err.println "correctAugustus: before checking full gene, v=${v}"
     }
     // annotate wrt full gene
     ipdGeneMap.each { header, seq ->
