@@ -47,7 +47,7 @@ process extract {
     if(params.nocontainer == "null") { 
         container = params.container
     }
-    publishDir output, mode: 'copy', overwrite: true
+    //publishDir output, mode: 'copy', overwrite: true
     input:
         tuple s, path(fa) from fqs
         path(markerCapFile)
@@ -64,6 +64,7 @@ process extract {
         }
     """
     bbduk.sh in=${fa} ${offStr} outm=${s}_kir.fastq ref=${markerCapFile} k=25 maskmiddle=f overwrite=t rename=t nzo=t rcomp=t ignorebadquality=t
+    # remove empty files
     find . -type f -size 0 -print0 |xargs -0 rm -f
 
     if [ -f ${offFile} ]; 
@@ -84,37 +85,46 @@ process correct {
   if(params.nocontainer == "null") { 
       container = params.container
   }
-  publishDir output, mode: 'copy', overwrite: true
+  //publishDir output, mode: 'copy', overwrite: true
   input:
     tuple s, path(fq) from kirFastqs
   output:
-	tuple s, file{"${s}-corrected.fasta.gz"} into correctedReads
+	tuple s, path{"${s}*.fasta.gz"} into correctedReads mode flatten
+//    	tuple s, path{"*.fasta.gz"} into correctedReads mode flatten
 	
     """
     lorma.sh ${fq}
     mv final.fasta ${s}-corrected.fasta
-    gzip ${s}-corrected.fasta
+
+    binBBFasta.groovy -i ${s}-corrected.fasta -o .
+
+    gzip ${s}-corrected*.fasta
     """
 } // correct
 
 /*
  * assemble
  * 
+ * @todo: change genome size for genes
  */
 process assemble {
   if(params.nocontainer == "null") { 
     container = params.container
   }
   publishDir output, mode: 'copy', overwrite: true //todo
+  errorStrategy 'ignore'
+    
   input:
-    tuple s, path(fq) from correctedReads
+    tuple s, path(cr) from correctedReads
   output:
     tuple s, path{"${s}*.contigs.fasta"} into assembly
-	
+
+    script:
+    def s2 = cr.name.replaceFirst("-corrected", "").replaceFirst(".fasta.gz", "")
     """
     # ${output}
-    canu -p ${s} -d ${s} genomeSize=200k ${params.canuPB} ${s}-corrected.fasta.gz
-    cp ${s}/${s}.contigs.fasta .
+    canu -p ${s2} -d ${s2} genomeSize=200k ${params.canuPB} ${cr}
+    cp ${s2}/${s2}.contigs.fasta .
     """
 } // assemble
 
