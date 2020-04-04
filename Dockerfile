@@ -22,7 +22,7 @@ RUN cd /opt  && mkdir -p /opt/bin \
   && mv download BBMap.tar && tar -xvzf BBMap.tar && rm BBMap.tar \
   && wget https://github.com/refresh-bio/KMC/releases/download/v3.1.1/KMC3.1.1.linux.tar.gz \
   && gunzip KMC3.1.1.linux.tar.gz && tar -xvf KMC3.1.1.linux.tar && rm -f KMC3.1.1.linux.tar \  
-  && cd /opt && wget https://github.com/marbl/canu/releases/download/v2.0/canu-2.0.Linux-amd64.tar.xz && tar -xJf canu-2.0.*.tar.xz && rm canu-2.0*.gz \
+  && cd /opt && wget https://github.com/marbl/canu/releases/download/v2.0/canu-2.0.Linux-amd64.tar.xz && tar -xJf canu-2.0.*.tar.xz && rm canu-2.0*.xz \
   && cd /opt && wget https://gite.lirmm.fr/lorma/lorma-releases/uploads/219b51b0d8d6ce378650743dc5f09024/lorma-bin_0.5_linux64.tar.gz \
   && gunzip lorma-bin_0.5_linux64.tar.gz && tar -xvf lorma-bin_0.5_linux64.tar && rm lorma-bin_0.5_linux64.tar \
   && cd /opt && wget https://gite.lirmm.fr/lordec/lordec-releases/uploads/710113d83c210b6989ccfbdbafa89234/lordec-bin_0.9_linux64.tar.bz2 \
