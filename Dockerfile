@@ -12,7 +12,7 @@ ENV TMPDIR /tmp
 RUN apt-get update && apt-get install -qyy curl git make vim cmake \
     gcc g++ unzip maven subversion gzip openjdk-8-jdk groovy wget \
     zlib1g-dev gnuplot lynx libncurses5-dev libncursesw5-dev libbz2-dev \
-    liblzma-dev python python3-pip cython3 tabix bwa  \
+    liblzma-dev python python3-pip python-setuptools cython3 tabix bwa  \
   && apt-get clean 
 
 # install stuff
@@ -36,7 +36,10 @@ RUN cd /opt  && mkdir -p /opt/bin \
   && unzip qualimap_v2.2.1.zip && rm qualimap_v2.2.1.zip \
   && cd /opt && wget http://www.bioinformatics.babraham.ac.uk/projects/fastqc/fastqc_v0.11.9.zip \
   && unzip fastqc_v0.11.9.zip && rm fastqc_v0.11.9.zip \
-  && chmod 750 /opt/FastQC/fastqc
+  && chmod 750 /opt/FastQC/fastqc \
+  && wget https://sourceforge.net/projects/quast/files/quast-5.0.2.tar.gz \
+  && tar -zxvf quast-5.0.2.tar.gz && cd quast-5.0.2 && ./setup.py install && cd .. \
+  && rm quast-5.0.2.tar.gz
 
 RUN pip3 install --upgrade NanoPlot
 
