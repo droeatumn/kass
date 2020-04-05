@@ -89,7 +89,7 @@ process correct {
   input:
     tuple s, path(fq) from kirFastqs
   output:
-	tuple s, path{"${s}*.fasta.gz"} into correctedReads mode flatten
+	tuple s, path{"${s}*.fasta"} into correctedReads
 //    	tuple s, path{"*.fasta.gz"} into correctedReads mode flatten
 	
     """
@@ -98,14 +98,15 @@ process correct {
 
     binBBFasta.groovy -i ${s}-corrected.fasta -o .
 
-    gzip ${s}-corrected*.fasta
+#    gzip ${s}-corrected*.fasta
     """
 } // correct
 
 /*
  * assemble
  * 
- * @todo: change genome size for genes
+ * @todo change genome size for genes
+ * @todo rename the contig names to eliminate duplications
  */
 process assemble {
   if(params.nocontainer == "null") { 
@@ -117,14 +118,28 @@ process assemble {
   input:
     tuple s, path(cr) from correctedReads
   output:
-    tuple s, path{"${s}*.contigs.fasta"} into assembly
+    tuple s, path{"*.contigs.fasta.gz"} into assembly
 
     script:
-    def s2 = cr.name.replaceFirst("-corrected", "").replaceFirst(".fasta.gz", "")
+    //def s2 = cr.name.replaceFirst("-corrected", "").replaceFirst(".fasta.gz", "")
     """
-    # ${output}
-    canu -p ${s2} -d ${s2} genomeSize=200k ${params.canuPB} ${cr}
-    cp ${s2}/${s2}.contigs.fasta .
+    id=""
+    firstID=""
+    FILES="*-corrected*.fasta"
+    for bFile in \$FILES; do
+        echo \$bFile
+        if [ "\$firstID" == "" ]; then
+            firstID=\$id
+        fi
+        id=\$(basename \$bFile)
+        # '%' Means start to remove after the next character;
+        id=\${id/-corrected/}
+        id=\${id%.fasta}
+        echo \$id
+        canu -p \$id -d \$id genomeSize=200k ${params.canuPB} \$bFile || true
+        cp \$id/\$id.contigs.fasta . || true
+    done
+    cat *.contigs.fasta | gzip > \$firstID.contigs.fasta.gz
     """
 } // assemble
 
