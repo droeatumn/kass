@@ -11,7 +11,6 @@
  * 
  * 
  * @author Dave Roe
- * @todo add support for bwa
  */
 
 params.home = baseDir
@@ -34,12 +33,12 @@ readTap = reads.tap(alignmentReads).filter{ it[1] != refFile }
 //System.err.println readTap
 
 process align {
-    if(params.nocontainer == "null") { 
-        container = params.container
-    }
-    publishDir params.output, mode: 'copy', overwrite: true
-    tag { s }
-
+  if(params.nocontainer == "null") { 
+      container = params.container
+  }
+  publishDir params.output, mode: 'copy', overwrite: true
+  errorStrategy 'ignore'
+  tag { s }
   // r is the input to be aligned
   input:
     set s, file(r) from readTap
@@ -50,7 +49,6 @@ process align {
     set s, file {"*_unaligned.txt.gz"} into unaligned
     set s, file {"*.fasta.*" } into refs
     set s, file {"bowtie_indexes" } into btIndexes
-    
   script:
     // todo: modularize this chunk
     def refName = ref.name.replaceFirst(".fasta", "")
@@ -82,7 +80,6 @@ process align {
     rm ${outName}.[bs]am
     samtools view -b -f 4 ${outName}_sorted.bam > ${outName}_unaligned.txt
     gzip -f ${outName}_unaligned.txt
-
     """
 } // align
 
@@ -122,6 +119,8 @@ process report {
     then
         fastqc -t ${params.threads} -o ${outName}_reports -f fastq ${r}
     fi
+    quast.py ${r} -r ${ref} || true
+    mv quast_results/results* ${outName}_reports/quast || true
     """
 } // report
 
