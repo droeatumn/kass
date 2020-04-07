@@ -1,7 +1,7 @@
 # kass
 main.nf assembles KIR haplotypes from PacBio HiFi reads.<br>
 annotate.nf annotates the structure of assembled contigs<br>
-align.nf aligns and reports on the raw and/or assembled sequences.
+align.nf aligns and reports on the raw or assembled sequences.
 
 <h2>Dependancies</h2>
 Install Java, Groovy, Nextflow, Docker, and Git.
@@ -51,7 +51,8 @@ The input is a directory containing a reference sequence in a fasta file along w
 <br>
 <b>Output</b><br>
 Index files are output for the reference fasta.<br>
-For each non-reference input file, a sorted bam file, its index, and the unaligned reads are output. Also, Qualimap (qualimap.pdf) and NanoPlot (NanoPlot-report.html) reports are generated for the alignment and a FastQC report (fastqc.html) is generated if the input is a fastq file.<br>
+For each non-reference input file, a sorted bam file, its index, and the unaligned reads are output. Also, Qualimap (qualimap.pdf), NanoPlot (NanoPlot-report.html), and Quast (quast/report.html) reports are generated for the alignment and a FastQC report (fastqc.html) is generated if the input is a fastq file. Also for fastq files, add <code>--bwa="-xpacbio"</code> to the command.<br>
+Use caution interpreting these reports. For example, Quast doesn't just report on the alignment. It reports misassembles that are really patterns of homology. This leads to erroneously high rates of mismatches. Use qualimap for the error rate.
 <br>
 <b>Running</b><br>
 Use the 'raw' parameter to indicate the input directory, and 'output' to indicate the directory to put the output. Use 'refFasta' to indicate the name of the reference fasta file that is located in the input directory. Use 'threadNum' to optionally set maximum number of threads to use (default 8).<br>
@@ -66,7 +67,8 @@ KP420439 and KP420442 are cA01&tilde;tA01. KP420440 is cB01&tilde;tB01. They eac
 
 <h2>Miscellaneous</h2>
 <b>Hardware</b><br>
-Minimum recommended hardware is 30G memory and 8 cores. More of each helps.
+Minimum recommended hardware for targeted sequencing is 30G main memory and
+8 CPU cores. More of each helps, especially with WGS.
 Run time is 1-2 hours per ID, depending on platform, genotype variation, and parallel execution.
 <br><br>
 <b>Allele annotation</b><br>
