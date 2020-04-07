@@ -20,7 +20,8 @@ params.output = home + "/output"
 output = params.output + "/"
 params.reference = ""
 params.bowtie = "--end-to-end -N0"
-params.threads = "8"
+params.bwa = "-k800 -W8000 -r10 -A1 -B60 -O40 -E40 -L50" // use -xpacbio for fastq
+params.threads = "7"
 params.container = "droeatumn/kass:latest"
 params.nocontainer = "null"
 
@@ -46,7 +47,7 @@ process align {
   output:
 //    set s, file {"*_sorted.bam*"} into bamOutput
     tuple val(s), file("*_sorted.bam"), file("*_sorted.bam.bai"), file(r) into bamOutput
-    set s, file {"*_unaligned.txt.gz"} into unaligned
+    set s, file {"*unaligned.sam"} into unaligned
     set s, file {"*.fasta.*" } into refs
     set s, file {"bowtie_indexes" } into btIndexes
   script:
@@ -73,13 +74,13 @@ process align {
 
     # alignment  
     # bowtie2 ${params.bowtie} --threads ${params.threads} -x bowtie_indexes/${refName}_index ${fastaFlag} ${r} -S ${outName}.sam --un ${outName}_unaligned.txt 2> ${outName}_err.txt
-    bwa mem -xpacbio -t${params.threads} ${ref} ${r} > ${outName}.sam 2> ${outName}_err.txt
-    samtools view -b -S ${outName}.sam > ${outName}.bam
+    bwa mem ${params.bwa} -t${params.threads} ${ref} ${r} > ${outName}.sam 2> ${outName}_err.txt
+    samtools view -h -O SAM -f 4 ${outName}.sam > ${outName}_unaligned.sam
+    samtools view -h -O SAM -F 0x04 ${outName}.sam > ${outName}_aligned.sam
+    samtools view -h -O BAM ${outName}_aligned.sam > ${outName}.bam
     samtools sort ${outName}.bam -o ${outName}_sorted.bam
     samtools index ${outName}_sorted.bam
-    rm ${outName}.[bs]am
-    samtools view -b -f 4 ${outName}_sorted.bam > ${outName}_unaligned.txt
-    gzip -f ${outName}_unaligned.txt
+#    rm ${outName}.[bs]am
     """
 } // align
 
@@ -114,12 +115,13 @@ process report {
     qualimap bamqc -bam ${outName}_sorted.bam -gd HUMAN -outdir ${outName}_reports -outformat PDF
     mv ${outName}_reports/report.pdf ${outName}_reports/${outName}_qualimap.pdf
     mv ${outName}_reports/genome_results.txt ${outName}_reports/${outName}_qualimap_genome_results.txt
-    NanoPlot -t ${params.threads} --bam ${outName}_sorted.bam -o ${outName}_reports -p ${outName} -f pdf --N50
+    NanoPlot -t ${params.threads} --bam ${outName}_sorted.bam -o ${outName}_reports -p ${outName} -f pdf --N50 || true
     if ["$fastaFlag" == ""]
     then
         fastqc -t ${params.threads} -o ${outName}_reports -f fastq ${r}
     fi
-    quast.py ${r} -r ${ref} || true
+#    quast.py --no-sv --k-mer-size 900 --min-alignment 20000 --extensive-mis-size 30000 ${r} -r ${ref} || true
+    quast.py --no-sv --k-mer-size 900 --min-alignment 10000 --extensive-mis-size 30000 ${r} -r ${ref} || true
     mv quast_results/results* ${outName}_reports/quast || true
     """
 } // report
