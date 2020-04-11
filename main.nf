@@ -128,14 +128,14 @@ process assemble {
     FILES="*-corrected*.fasta"
     for bFile in \$FILES; do
         echo \$bFile
-        if [ "\$firstID" == "" ]; then
-            firstID=\$id
-        fi
         id=\$(basename \$bFile)
         # '%' Means start to remove after the next character;
         id=\${id/-corrected/}
         id=\${id%.fasta}
         echo \$id
+        if [ "\$firstID" == "" ]; then
+            firstID=\$id
+        fi
         canu -p \$id -d \$id genomeSize=200k ${params.canuPB} \$bFile || true
         cp \$id/\$id.contigs.fasta . || true
     done
