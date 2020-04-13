@@ -1,5 +1,4 @@
 #!/usr/bin/env groovy
-
 /*
  * Convert multi-gene GFF format (as output from chrishah/premaker-plus AUGUSTUS) to 
  *   1. A Feature Table as required for sequence submission to GenBank.
@@ -7,7 +6,7 @@
  *   2. Three GL strings containg IMGT/IPD interpretations: 
  *       protein, cDNA, full gene.
  *
- * e.g., gff2ftGene.groovy -g KIR2DL4 -i ~/doc/KIRDB/2.8.0/fasta/ -f all_2DL4/augustus.gff -s all_seqs_v3_2DL4_features_short.fasta -o seqs_v3_all_2DL4.ft.txt -l seqs_v3_all_2DL4.gl.txt 2> seqs_v3_all_2DL4.ft_err.txt
+ * e.g., gff2ftGene.groovy -g KIR2DL4 -i ~/doc/KIRDB/2.8.0/fasta/ -f all_2DL4/augustus.gff -s all_seqs_v3_2DL4_features_short.fasta -l seqs_v3_all_2DL4.gl.txt 2> seqs_v3_all_2DL4.ft_err.txt
 
  * main arguments:
  *   -h  display help message [optional]
@@ -15,7 +14,6 @@
  *   -g  gene name (e.g., KIR2DL4 or HLA-A) [required]
  *   -f  location to GFF file output by AUGUSTUS (Web); 0-based indexes
  *   -s, --seq [class java.io.File]  fasta file containing the sequence [required]
- *   -o  location to output GenBank feature table
  *   -l  location to output the GL string
  *
  * Requires 
@@ -67,7 +65,7 @@ err = System.err
 File ipdDir, gffFile, outFile
 
 // startIndex is a 1-based index
-(ipdDir, gffFile, seqFile, outFile, outGLFile, GENE_NAME) = handleArgs(args)
+(ipdDir, gffFile, seqFile, outGLFile, GENE_NAME) = handleArgs(args)
 
 if(GENE_NAME.contains("KIR")) {
     NOMEN_VER = KIR_NOMEN_VER
@@ -99,7 +97,6 @@ if(debugging <= 3) {
 featureMap.each { k, vList ->
     //(id, gene, seqStartIndex, seqEndIndex) = parseDescription(desc)
     outFile = new File(k + ".ft.txt")
-    FileWriter outWriter = new FileWriter(outFile)
     gbWriter = new PrintWriter(outFile.newOutputStream(), true)
     if(debugging <= 1) { 
         err.println "outputting to ${outFile}"
@@ -158,6 +155,7 @@ def Expando initGFF() {
  *   id: id of the individual
  *   gene; the IPD name of the gene
  *   desc: the description of the sequence from the fasta
+ *   augustusGeneID: AUGUSTUS' gene and transcript id; e.g., g1.t1
  *   sequence; the full sequence from the fasta as DNASequence
  *   startSeq: 5' start of the input sequence (1-based index)
  *   endSeq: 3' end of the input sequence (1-based index)
@@ -208,7 +206,9 @@ def Map<String, ArrayList<Expando>> processGFF(File gffFile, Map<String,String> 
         if(debugging <= 1) { 
             err.println "processGFF: line=${line}"
         }
-        if(type != "transcription_start_site") {
+        // if the gene isn't all there, transcription_start_site will be absent
+        // and the order will be gene, mRNA, intron, CDS, exon...
+        if((type != "transcription_start_site") && (type != "CDS")) {
             continue;
         }
         Expando eGene = processGFFGene(eFormat, line, listReader, descSeqMap, gffAAMap,
@@ -293,7 +293,7 @@ def Expando processGFFGene(Expando eFormat, ArrayList line,
     HashSet<String> cCallSet = new HashSet()
     HashSet<String> gCallSet = new HashSet()
     String gene // GFF gene name (e.g., 'g1')
-    String transscript // GFF transcript name (e.g., 't1')
+    String transcript // GFF transcript name (e.g., 't1')
     Integer exonIndex = 0 // 0-based Array indexes
     while(line != null) {
         if(line.size() == 1) { // ignore comments
@@ -307,7 +307,8 @@ def Expando processGFFGene(Expando eFormat, ArrayList line,
         }
         Integer start = line[eFormat.START].toInteger()
         Integer end = line[eFormat.END].toInteger()
-        if(type == "transcription_start_site") { // this precedes 'tss'
+        if((type == "transcription_start_site") ||
+           ((transcript == null) && (type == "CDS"))) {
             // get the ID, and location of the sequence within the haplotype
             // e.g., cB02~tB01_GU182355.1_2DL4_67155-80842
             e.start5p = start
@@ -340,6 +341,7 @@ def Expando processGFFGene(Expando eFormat, ArrayList line,
                 err.println "processGFFGene: ${gene}.${transcript}"
                 err.println "processGFFGene: ipdGene=${ipdGene}"
             }
+            e.augustusGeneID="${gene}.${transcript}"   // e.g., g1.t1
             e.gene = GENE_NAME
         } else if(type == "CDS") { // or "exon"
             e.exonStartTreeSet.add(start)
@@ -895,10 +897,10 @@ def void outputGLs(Map<String, Expando> featureMap, File outGLFile) {
     }
     FileWriter outGLWriter = new FileWriter(outGLFile)
 
-    outGLWriter.println "ID\tgene\tprotein\tcDNA\tfull"
+    outGLWriter.println "ID\taugID\tgene\tprotein\tcDNA\tfull"
     featureMap.each { id, eList ->
         eList.each { e ->
-            outGLWriter.println "${e.id}\t${e.gene}\t${e.pcall}\t${e.ccall}\t${e.gcall}"
+            outGLWriter.println "${e.id}\t${e.augustusGeneID}\t${e.gene}\t${e.pcall}\t${e.ccall}\t${e.gcall}"
         }
     }
         
@@ -923,12 +925,10 @@ def ArrayList handleArgs(String[] args) {
                               true)
     seqArg = new FileArgument("s", "seq", "fasta file containing the sequence",
                               true)
-    outArg = new FileArgument("o", "ft", "output feature table file",
-                              false)
     outGLArg = new FileArgument("l", "gl", "output gl file", true)
     geneSysArg = new StringArgument("g", "gene", "e.g., 'KIR2DL4' or 'HLA-A'",
                                     true)
-    ArgumentList arguments = new ArgumentList(help, ipdArg, gffArg, seqArg, outArg,
+    ArgumentList arguments = new ArgumentList(help, ipdArg, gffArg, seqArg,
                                               outGLArg, geneSysArg)
 
     CommandLine commandLine = new CommandLine(args)
@@ -943,7 +943,7 @@ def ArrayList handleArgs(String[] args) {
         System.exit(-1)
     }
 
-    return [ipdArg.getValue(), gffArg.getValue(), seqArg.getValue(), outArg.getValue(),
+    return [ipdArg.getValue(), gffArg.getValue(), seqArg.getValue(),
             outGLArg.getValue(), geneSysArg.getValue()]
 } // handleArgs
 
@@ -958,6 +958,7 @@ def ArrayList handleArgs(String[] args) {
 def void outputGenBank(Expando query, Map<String,String> ipdNucMap, PrintWriter gbOut) {
     if(debugging <= 1) {
         err.println "outputGenBank(${query.gene})"
+        err.println query
     }
     Integer startIndex = new Integer(query.startSeq)
     // gene
@@ -966,8 +967,11 @@ def void outputGenBank(Expando query, Map<String,String> ipdNucMap, PrintWriter 
     if(gene =~ /[23]DP/) {
         pseudo = true
     }
-    geneStart = query.start5p // from 1-based to 0-based
-    geneEnd = query.end3p
+    geneStart = new Integer(query.start5p) // from 1-based to 0-based
+    geneEnd = new Integer(query.sequence.getLength()-1)
+    if(query.end3p != null) {
+        geneEnd = new Integer(query.end3p)
+    }
     if(startIndex != 1) {
         geneStart += startIndex
         geneEnd += startIndex
@@ -1500,6 +1504,9 @@ def void correctAugustus(Expando v, Map<String, String> ipdNucMap, Map<String, S
     }
     if(debugging <= 2) {
         err.println "correctAugustus: before checking full gene, v=${v}"
+    }
+    if(v.end3p == null) { // todo: why is this null here? KP420446 3DP1
+        v.end3p = v.sequence.getLength()-1
     }
     // annotate wrt full gene
     ipdGeneMap.each { header, seq ->
