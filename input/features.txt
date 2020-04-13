@@ -1,6 +1,6 @@
 markup	resolution	nomenclature (classic)	gene nomanclature (new)	notes
 [ABChDcog]+[(E|c)L]+	gene/allele	3DL3	3DL3
-(FO|Fp|FQ)[SCOANJP]+.*	gene/allele	3DL2	3DL2
+(FO|Fp|FQ|FN)[SCOANJP]+.*	gene/allele	3DL2	3DL2
 SC[AO]?NO?J([^K]|$).* 	gene/allele	3DL2	3DL2	usually  less than full gene ends
 FPC.*	gene/allele	3DL2	3DL2
 NOJ.*	gene/allele	3DL2	3DL2
