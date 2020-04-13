@@ -138,6 +138,7 @@ process assemble {
         fi
         canu -p \$id -d \$id genomeSize=200k ${params.canuPB} \$bFile || true
         cp \$id/\$id.contigs.fasta . || true
+        deep.pl replace '>tig' ">${id}_tig' "${id}.contigs.fasta"
     done
     cat *.contigs.fasta | gzip > \$firstID.contigs.fasta.gz
     """
