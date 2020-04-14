@@ -47,7 +47,9 @@ process extract {
     if(params.nocontainer == "null") { 
         container = params.container
     }
-    //publishDir output, mode: 'copy', overwrite: true
+    publishDir output, mode: 'copy', overwrite: true
+//doesn't work    publishDir "*_off-kir.fastq.gz", mode: 'copy', overwrite: true
+//doesn't work    publishDir "*_kir.fastq", mode: 'copy', overwrite: true
     input:
         tuple s, path(fa) from fqs
         path(markerCapFile)
@@ -56,11 +58,11 @@ process extract {
         tuple s, file{"*_off-kir.fastq.gz"} into offkirFastqs optional true
 
     script:
-        offFile=""
-        offStr=""
+        def offFile = ""
+        def offStr = ""
         if(params.off != 0) {
-            offFile="${s}_off-kir.fastq"
-            offStr="out=${offFile}"
+            offFile = s + "_off-kir.fastq"
+            offStr = "out="  + offFile
         }
     """
     bbduk.sh in=${fa} ${offStr} outm=${s}_kir.fastq ref=${markerCapFile} k=25 maskmiddle=f overwrite=t rename=t nzo=t rcomp=t ignorebadquality=t
@@ -138,7 +140,7 @@ process assemble {
         fi
         canu -p \$id -d \$id genomeSize=200k ${params.canuPB} \$bFile || true
         cp \$id/\$id.contigs.fasta . || true
-        deep.pl replace '>tig' ">${id}_tig' "${id}.contigs.fasta"
+        deep.pl replace '>tig' ">\${id}_tig" "\${id}.contigs.fasta"
     done
     cat *.contigs.fasta | gzip > \$firstID.contigs.fasta.gz
     """
