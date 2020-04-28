@@ -18,6 +18,8 @@ RUN apt-get update && apt-get install -qyy curl git make vim cmake \
 # install stuff
 RUN cd /opt  && mkdir -p /opt/bin \
   && cd /opt/bin && curl -fsSL get.nextflow.io | /bin/bash \
+  && cd /opt/bin && wget https://ftp.ncbi.nih.gov/toolbox/ncbi_tools/converters/by_program/table2asn_GFF/linux64.table2asn_GFF.gz \
+  && gunzip linux64.table2asn_GFF.gz && chmod 755 linux64.table2asn_GFF \
   && cd /opt && wget https://sourceforge.net/projects/bbmap/files/latest/download \
   && mv download BBMap.tar && tar -xvzf BBMap.tar && rm BBMap.tar \
   && wget https://github.com/refresh-bio/KMC/releases/download/v3.1.1/KMC3.1.1.linux.tar.gz \
