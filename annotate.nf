@@ -17,7 +17,7 @@ params.raw = home + '/raw/'
 params.output = home + "/output"
 output = params.output + "/"
 params.bowtie = "-a --end-to-end --rdg 3,3 --rfg 3,3"
-params.threads = "8"
+params.threads = "28"
 params.container = "droeatumn/kass:latest"
 params.nocontainer = "null"
 params.sbt = home + "/input/SubmissionTemplate.sbt"
@@ -252,12 +252,14 @@ process combineGFF {
         path("*.sqn")
         path("*.gbf")
         path("*.dr")
+        path("*.tbl")
+        path("*.err")
     script:
-
     """
     echo "${modGFF}, ${desc}, ${inContig}"
     combineGFF.groovy -i mod.gff -o .
     linux64.table2asn_GFF -augustus-fix -f ${desc}.gff -i ${inContig} -outdir . -genbank -verbose -euk -V b -Z  -t ${sbtFile} -j "[organism=Homo sapiens]"
+    gbf2tbl.pl ${desc}.gbf
     """
 } // combineGFF
 
