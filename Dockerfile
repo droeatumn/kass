@@ -29,8 +29,8 @@ RUN cd /opt  && mkdir -p /opt/bin \
   && cd /opt && wget https://github.com/marbl/canu/releases/download/v2.0/canu-2.0.Linux-amd64.tar.xz && tar -xJf canu-2.0.*.tar.xz && rm canu-2.0*.xz \
 #  && cd /opt && wget https://gite.lirmm.fr/lorma/lorma-releases/uploads/219b51b0d8d6ce378650743dc5f09024/lorma-bin_0.5_linux64.tar.gz \
 #  && gunzip lorma-bin_0.5_linux64.tar.gz && tar -xvf lorma-bin_0.5_linux64.tar && rm lorma-bin_0.5_linux64.tar \
-#  && cd /opt && wget https://gite.lirmm.fr/lordec/lordec-releases/uploads/710113d83c210b6989ccfbdbafa89234/lordec-bin_0.9_linux64.tar.bz2 \
-#  && bunzip2 lordec-bin_0.9_linux64.tar.bz2 && tar -xvf lordec-bin_0.9_linux64.tar && rm lordec-bin_0.9_linux64.tar \
+  && cd /opt && wget https://gite.lirmm.fr/lordec/lordec-releases/uploads/710113d83c210b6989ccfbdbafa89234/lordec-bin_0.9_linux64.tar.bz2 \
+  && bunzip2 lordec-bin_0.9_linux64.tar.bz2 && tar -xvf lordec-bin_0.9_linux64.tar && rm lordec-bin_0.9_linux64.tar \
   && cd /opt && wget https://github.com/samtools/samtools/releases/download/1.10/samtools-1.10.tar.bz2 \
   && bunzip2 samtools-1.10.tar.bz2 && tar -xvf samtools-1.10.tar && rm samtools-1.10.tar \
   && cd samtools-1.10 && ./configure --prefix=/opt && make && make install && cd /opt && rm -rf samtools* \
@@ -68,7 +68,7 @@ ENV CLASSPATH /opt/jars/guava-21.0.jar:$CLASSPATH
 # environment variables
 ENV PATH /opt/bin:$PATH
 #ENV PATH /opt/lorma-bin_0.5_linux64:$PATH
-#ENV PATH /opt/lordec-bin_0.9_linux64:$PATH
+ENV PATH /opt/lordec-bin_0.9_linux64:$PATH
 ENV PATH /opt/bowtie2-2.3.5.1-linux-x86_64:$PATH
 ENV PATH /opt/qualimap_v2.2.1:$PATH
 ENV PATH /opt/bbmap:$PATH
