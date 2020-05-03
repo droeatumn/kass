@@ -68,6 +68,7 @@ ENV CLASSPATH /opt/jars/guava-21.0.jar:$CLASSPATH
 # environment variables
 ENV PATH /opt/bin:$PATH
 #ENV PATH /opt/lorma-bin_0.5_linux64:$PATH
+ENV PATH /opt/kass/bin/lorma-bin_0.5_linux64:$PATH
 ENV PATH /opt/lordec-bin_0.9_linux64:$PATH
 ENV PATH /opt/bowtie2-2.3.5.1-linux-x86_64:$PATH
 ENV PATH /opt/qualimap_v2.2.1:$PATH
