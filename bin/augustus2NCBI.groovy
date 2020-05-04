@@ -740,7 +740,11 @@ def List<LinkedHashMap> loadGFFMaps(gffFile) {
     if(debugging <= 3) { 
         err.println "loadGFFMaps: loading ${protFileName}..."
     }
-    gffAAMap = FastaReaderHelper.readFastaProteinSequence(new File(protFileName))
+    gffAAMap = new LinkedHashMap()
+    pf = new File(protFileName)
+    if(pf.length() != 0) { 
+        gffAAMap = FastaReaderHelper.readFastaProteinSequence(pf)
+    }
     if(debugging <= 3) { 
         err.println gffAAMap.keySet().size() + " items"
     }
@@ -750,7 +754,11 @@ def List<LinkedHashMap> loadGFFMaps(gffFile) {
     if(debugging <= 3) { 
         err.println "loadGFFMaps: loading ${nucFileName}..."
     }
-    gffCDSMap = FastaReaderHelper.readFastaDNASequence(new File(nucFileName))
+    gffCDSMap = new LinkedHashMap()
+    nf = new File(nucFileName)
+    if(nf.length() != 0) { 
+        gffCDSMap = FastaReaderHelper.readFastaDNASequence(nf)
+    }
     if(debugging <= 3) { 
         err.println gffCDSMap.keySet().size() + " items"
     }
@@ -760,7 +768,11 @@ def List<LinkedHashMap> loadGFFMaps(gffFile) {
     if(debugging <= 3) { 
         err.println "loadGFFMaps: loading ${nucFileName}..."
     }
-    gffCodingMap = FastaReaderHelper.readFastaDNASequence(new File(nucFileName))
+    gffCodingMap = new LinkedHashMap()
+    nf = new File(nucFileName)
+    if(nf.length() != 0) { 
+        gffCodingMap = FastaReaderHelper.readFastaDNASequence()
+    }
     if(debugging <= 3) { 
         err.println gffCodingMap.keySet().size() + " items"
     }
