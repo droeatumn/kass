@@ -600,16 +600,19 @@ def ArrayList<Map>loadIPDMaps(File ipdDir, String ipdGene) {
  *                    2: <String, DNASequence> for .codingseq
  */
 def List<LinkedHashMap> loadGFFMaps(gffFile) { 
-    LinkedHashMap<String, ProteinSequence> gffAAMap
-    LinkedHashMap<String, DNASequence> gffCDSMap
-    LinkedHashMap<String, DNASequence> gffCodingMap
+    LinkedHashMap<String, ProteinSequence> gffAAMap = new LinkedHashMap()
+    LinkedHashMap<String, DNASequence> gffCDSMap = new LinkedHashMap()
+    LinkedHashMap<String, DNASequence> gffCodingMap = new LinkedHashMap()
 
     // .aa
     protFileName = gffFile.getAbsolutePath().replace(".gff", ".aa")
     if(debugging <= 3) { 
         err.println "loadGFFMaps: loading ${protFileName}..."
     }
-    gffAAMap = FastaReaderHelper.readFastaProteinSequence(new File(protFileName))
+    pf = new File(protFileName)
+    if(pf.length() != 0) { 
+        gffAAMap = FastaReaderHelper.readFastaProteinSequence(pf)
+    }
     if(debugging <= 3) { 
         err.println gffAAMap.keySet().size() + " items"
     }
@@ -619,7 +622,10 @@ def List<LinkedHashMap> loadGFFMaps(gffFile) {
     if(debugging <= 3) { 
         err.println "loadGFFMaps: loading ${nucFileName}..."
     }
-    gffCDSMap = FastaReaderHelper.readFastaDNASequence(new File(nucFileName))
+    nf = new File(nucFileName)
+    if(nf.length() != 0) { 
+        gffCDSMap = FastaReaderHelper.readFastaDNASequence(nf)
+    }
     if(debugging <= 3) { 
         err.println gffCDSMap.keySet().size() + " items"
     }
@@ -629,7 +635,10 @@ def List<LinkedHashMap> loadGFFMaps(gffFile) {
     if(debugging <= 3) { 
         err.println "loadGFFMaps: loading ${nucFileName}..."
     }
-    gffCodingMap = FastaReaderHelper.readFastaDNASequence(new File(nucFileName))
+    nf = new File(nucFileName)
+    if(nf.length() != 0) { 
+        gffCodingMap = FastaReaderHelper.readFastaDNASequence(nf)
+    }
     if(debugging <= 3) { 
         err.println gffCodingMap.keySet().size() + " items"
     }
@@ -893,7 +902,10 @@ def ArrayList<String> truncateToProtein(String allele) {
  */
 def void outputGLs(Map<String, Expando> featureMap, File outGLFile) {
     if(debugging <= 1) {
-        err.println "outputGLs(outGLFile=${outGLFile.getName()})"
+        err.println "outputGLs(outGLFile=${outGLFile.getName()}, num keys=${featureMap.keySet().size()})"
+    }
+    if(featureMap.keySet().size() == 0) {
+        return
     }
     FileWriter outGLWriter = new FileWriter(outGLFile)
 
