@@ -771,7 +771,7 @@ def List<LinkedHashMap> loadGFFMaps(gffFile) {
     gffCodingMap = new LinkedHashMap()
     nf = new File(nucFileName)
     if(nf.length() != 0) { 
-        gffCodingMap = FastaReaderHelper.readFastaDNASequence()
+        gffCodingMap = FastaReaderHelper.readFastaDNASequence(nf)
     }
     if(debugging <= 3) { 
         err.println gffCodingMap.keySet().size() + " items"
