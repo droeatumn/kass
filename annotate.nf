@@ -4,6 +4,9 @@
  * Annotates strings in fasta files.
  * 
  * @author Dave Roe
+ * @todo: this fails when the direction is the wrong way   *
+ *    maybe add a step that standardizes based on the probes?
+ *    also have to break the contigs into multiple files
  * @todo handle gzipped input
  * @todo remove full paths to augustus bin and scripts
  * @todo rename gl.txt
@@ -27,12 +30,11 @@ featuresFile = file("${home}/input/features.txt") // markup features
 markerFile = file("${home}/input/cap.fasta") // capture markers
 alignProbesFile = file("${home}/src/alignment2ProbePairs.groovy")
 annotateFile = file("${home}/src/annotateMarkup.groovy")
-sbtFile = file("${params.raw}/${params.sbt}")
 
 raw = "${params.raw}/*{fasta,fa,fasta.gz,fa.gz}"
 reads = Channel.fromPath(raw).ifEmpty { error "cannot find any reads matching ${raw}" }.map { path -> tuple(sample(path), path) }
 annotateReads = Channel.create()
-readTap = reads.tap(annotateReads).filter{ it[1] != sbtFile }
+readTap = reads.tap(annotateReads).filter{ it[1] != params.sbt }
 
 /* 
  * Use the capture probes to annotate.
@@ -223,7 +225,6 @@ process alleles {
     def fullLocus = "KIR" + locus
     """
     #echo "interpret alleles ${s} ${g}"
-    #echo $CLASSPATH
     # cdsexons
     /root/augustus/scripts/getAnnoFasta.pl --seqfile ${r} ${g} 2> ${s}_${locus}_getAnnoFasta_err.txt
     # aa and codingseq
@@ -247,7 +248,7 @@ process combineGFF {
     publishDir params.output, mode: 'copy', overwrite: true
     input:
         tuple path(modGFF), val(desc), path(inContig) from modGFFwFasta
-        path(sbtFile)
+        file sbtF from params.sbt
     output:
         path("*.sqn")
         path("*.gbf")
@@ -258,7 +259,7 @@ process combineGFF {
     """
     echo "${modGFF}, ${desc}, ${inContig}"
     combineGFF.groovy -i mod.gff -o .
-    linux64.table2asn_GFF -augustus-fix -f ${desc}.gff -i ${inContig} -outdir . -genbank -verbose -euk -V b -Z  -t ${sbtFile} -j "[organism=Homo sapiens]"
+    linux64.table2asn_GFF -augustus-fix -f ${desc}.gff -i ${inContig} -outdir . -genbank -verbose -euk -V b -Z  -t ${sbtF} -j "[organism=Homo sapiens]"
     gbf2tbl.pl ${desc}.gbf
     """
 } // combineGFF
@@ -269,4 +270,5 @@ def sample(Path path) {
   def name = path.getFileName().toString()
   int start = Math.max(0, name.lastIndexOf('/'))
   return name.substring(start, name.indexOf('.'))
+
 }
