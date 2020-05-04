@@ -33,7 +33,7 @@ The image contains an example: simulated reads from a single cA01&tilde;tA01 hap
 
 <h2>Annotation</h2>
 <b>Input</b><br>
-The input is a folder containing fasta files (usually contigs) to be annotated. Each file may contain more than one sequence.<br>
+The input is a folder containing fasta files (usually contigs) to be annotated. Each file may contain more than one sequence. The files cannot be gzipped.<br>
 <br>
 <b>Output</b><br>
 For each fasta input file, an annotation file (annotation.txt) will be created to annotate the higher-level structure. For each locus, feature tables (ft.txt) and a genotype list (gl.txt) are created to annotate the alleles.<br>
@@ -52,7 +52,7 @@ The input is a directory containing a reference sequence in a fasta file along w
 <b>Output</b><br>
 Index files are output for the reference fasta.<br>
 For each non-reference input file, a sorted bam file, its index, and the unaligned reads are output. Also, Qualimap (qualimap.pdf), NanoPlot (NanoPlot-report.html), and Quast (quast/report.html) reports are generated for the alignment and a FastQC report (fastqc.html) is generated if the input is a fastq file. Also for fastq files, add <code>--bwa="-xpacbio"</code> to the command.<br>
-Use caution interpreting these reports. For example, Quast doesn't just report on the alignment. It reports misassembles that are really patterns of homology. This leads to erroneously high rates of mismatches. Use qualimap for the error rate.
+Use caution interpreting these reports. For example, Quast doesn't just report on the alignment. It reports misassembles that are really patterns of homology. This leads to erroneously high rates of mismatches. Use qualimap for the error rate.<br>
 <br>
 <b>Running</b><br>
 Use the 'raw' parameter to indicate the input directory, and 'output' to indicate the directory to put the output. Use 'refFasta' to indicate the name of the reference fasta file that is located in the input directory. Use 'threadNum' to optionally set maximum number of threads to use (default 8).<br>
