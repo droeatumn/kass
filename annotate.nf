@@ -213,11 +213,9 @@ process alleles {
     set s, file(inContig), file(r), file(g) from augustus // r is fasta, g is gff
     path(refAlleleDir)
   output:
-    path("*.gl.txt") into gl
-    path("*.ft.txt") into ft
-//    tuple s, path("*_mod.gff") into gffMod
-//    tuple s, path(inContig), path("*_mod.gff") into gffMod
-      path("*_mod.gff") into gffMod
+    path("*.gl.txt") optional true into gl
+    path("*.ft.txt") optional true into ft
+    path("*_mod.gff") optional true into gffMod
   script:
     def nameNoExt = g.name.replaceAll("_augustus.gff", "")
     def i = nameNoExt.lastIndexOf('_')
