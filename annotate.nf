@@ -174,6 +174,7 @@ process augustus {
     if(params.nocontainer == "null") { 
         container = params.container
     }
+    validExitStatus 0,1
     //publishDir params.output, mode: 'copy', overwrite: true
     tag { s }
 
@@ -181,7 +182,7 @@ process augustus {
     set s, file(inContig), file(r), file(g) from gff
     path(refAlleleDir)    
   output:
-    tuple s, path(inContig), path(r), path("*_augustus.gff")  into augustus
+    tuple s, path(inContig), path(r), path("*_augustus.gff") optional true into augustus
 
   script:
     def nameNoExt = g.baseName
@@ -192,7 +193,12 @@ process augustus {
     #echo "augustus ${s} ${g}"
     #echo $PATH
     /root/augustus/bin/augustus --species=human --UTR=on --strand=both --sample=100 --keep_viterbi=true --alternatives-from-sampling=false --genemodel=partial --hintsfile=${g} --extrinsicCfgFile=extrinsic.ME.cfg --protein=on --introns=on --start=on --stop=on --cds=on --codingseq=on --alternatives-from-evidence=true --proteinprofile=genes/${fullLocus}_prot_msa.prfl ${r} --outfile=${s}_${locus}_augustus.gtf 2> ${s}_augustus_err.txt
-    /root/augustus/scripts/gtf2gff.pl < ${s}_${locus}_augustus.gtf --out=${s}_${locus}_augustus.gff --gff3
+    ret=1
+    if grep -q gene_id ${s}_${locus}_augustus.gtf; then
+        /root/augustus/scripts/gtf2gff.pl < ${s}_${locus}_augustus.gtf --out=${s}_${locus}_augustus.gff --gff3
+    else
+        exit 0    # not working (todo)
+    fi
     """
 } // augustus
 
@@ -234,6 +240,20 @@ process alleles {
 
 allModGFFs = gffMod.collectFile(name: 'mod.gff', newLine: true)
 modGFFwFasta = allModGFFs.combine(annotateReads)
+
+process publishGL {
+    if(params.nocontainer == "null") { 
+        container = params.container
+    }
+    publishDir params.output, mode: 'copy', overwrite: true
+    input:
+        path(g) from gl
+    output:
+        path(g)
+    script:
+    """
+    """
+} // publishGL
 
 /*
  * Combine the per-feature GFFs into the per contig annotation.
