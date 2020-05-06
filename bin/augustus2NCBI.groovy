@@ -315,6 +315,9 @@ ArrayList<Expando> processGFF(File gffFile, Map<String,String> ipdProtMap,
             Expando eGene = null
             (eGene, line) = processGFFGene(eFormat, line, listReader, descSeqMap, gffAAMap,
                                            gffCDSMap, gffCodingMap, ipdProtMap, ipdNucMap, ipdGeneMap)
+            if((eGene == null) || eGene.newGFF.size() == 0) {
+                break
+            }
             previousEntryList = geneList
             ArrayList<Expando> toAdd = new ArrayList()
             ArrayList<Expando> toRemove = new ArrayList()
@@ -469,6 +472,14 @@ def ArrayList<Object> processGFFGene(Expando eFormat, ArrayList line,
             e.exonEndTreeSet.add(end)
             if(debugging <= 3) {
                 err.println "processGFFGene: gene ${gene} exon ${exonIndex}"
+            }
+            // this is what happens when the 5' part of the gene is missing
+            // todo: handle this better
+            if(gene == null) {
+                if(debugging <= 1) {
+                    err.println "processGFFGene: breaking"
+                }
+                break;
             }
             if(exonIndex == 0) {
                 // process all the exons
@@ -1092,6 +1103,9 @@ def ArrayList handleArgs(String[] args) {
 // todo: document
 def Boolean sequenceEquals(org.biojava.nbio.core.sequence.template.Sequence a,
                            org.biojava.nbio.core.sequence.template.Sequence b) {
+    if(debugging <= 1) {
+        err.println "sequenceEquals()"
+    }
     Boolean ret = false
     // augustus puts a '*' at the end of proteins
     astr = a.getSequenceAsString().replaceAll("\\*", "")
@@ -1110,6 +1124,9 @@ def Boolean sequenceEquals(org.biojava.nbio.core.sequence.template.Sequence a,
             err.println "sequenceEquals: found match"
         }
         ret = true
+    }
+    if(debugging <= 1) {
+        err.println "sequenceEquals: return ${ret}"
     }
     return ret
 } // sequenceEquals
