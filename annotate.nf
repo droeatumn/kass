@@ -30,6 +30,7 @@ featuresFile = file("${home}/input/features.txt") // markup features
 markerFile = file("${home}/input/cap.fasta") // capture markers
 alignProbesFile = file("${home}/src/alignment2ProbePairs.groovy")
 annotateFile = file("${home}/src/annotateMarkup.groovy")
+sbtFile = file("${params.sbt}")
 
 raw = "${params.raw}/*{fasta,fa,fasta.gz,fa.gz}"
 reads = Channel.fromPath(raw).ifEmpty { error "cannot find any reads matching ${raw}" }.map { path -> tuple(sample(path), path) }
@@ -183,7 +184,7 @@ process augustus {
     path(refAlleleDir)    
   output:
     tuple s, path(inContig), path(r), path("*_augustus.gff") optional true into augustus
-
+    
   script:
     def nameNoExt = g.baseName
     def i = nameNoExt.lastIndexOf('_')
@@ -220,7 +221,7 @@ process alleles {
     path(refAlleleDir)
   output:
     path("*.gl.txt") optional true into gl
-    path("*.ft.txt") optional true into ft
+    path("*.ft.txt") optional true into ftMod
     path("*_mod.gff") optional true into gffMod
   script:
     def nameNoExt = g.name.replaceAll("_augustus.gff", "")
@@ -240,6 +241,8 @@ process alleles {
 
 allModGFFs = gffMod.collectFile(name: 'mod.gff', newLine: true)
 modGFFwFasta = allModGFFs.combine(annotateReads)
+
+allModFTs = ftMod.collectFile(name: 'mod.ft.txt', newLine: true)
 
 process publishGL {
     if(params.nocontainer == "null") { 
@@ -266,7 +269,7 @@ process combineGFF {
     publishDir params.output, mode: 'copy', overwrite: true
     input:
         tuple path(modGFF), val(desc), path(inContig) from modGFFwFasta
-        file sbtF from params.sbt
+        file sbtF from sbtFile
     output:
         path("*.sqn")
         path("*.gbf")
@@ -282,7 +285,29 @@ process combineGFF {
     """
 } // combineGFF
 
-// combineGLs todo
+/*
+ * Combine the per-feature feature tables into the per contig annotation.
+ */
+process combineFT {
+    if(params.nocontainer == "null") { 
+        container = params.container
+    }
+    publishDir params.output, mode: 'copy', overwrite: true
+    input:
+        path(ft) from allModFTs
+    output:
+        path("*.ft.txt")
+    script:
+    """
+    echo "${ft}"
+    if [ ! -f mod.ft.txt ]; then
+        cp *.ft.txt mod.ft.txt
+    fi
+    combineFT.groovy -i mod.ft.txt
+    """
+} // combineFT
+
+// combineGL (todo)
 
 def sample(Path path) {
   def name = path.getFileName().toString()
