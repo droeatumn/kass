@@ -111,7 +111,7 @@ featureMap.each { k, vList ->
         if(debugging <= 2) { 
             err.println "after correctAugustus full match, gene now ${v.gene}, pcall now ${v.pcall}, ccall now ${v.ccall}, gcall now ${v.gcall}"
         }
-        outputGenBank(v, ipdNucMap, gbWriter)
+        outputGenBank(k, v, ipdNucMap, gbWriter)
     }
     gbWriter.close()
 } // each feature
@@ -967,7 +967,8 @@ def ArrayList handleArgs(String[] args) {
  * this doesn't work for new protein level alleles (todo)
  * @param ipdNucMap Maps of description -> sequence for '_nuc.fasta' file from IPD-KIR
  */
-def void outputGenBank(Expando query, Map<String,String> ipdNucMap, PrintWriter gbOut) {
+def void outputGenBank(String id, Expando query, Map<String,String> ipdNucMap,
+                       PrintWriter gbOut) {
     if(debugging <= 1) {
         err.println "outputGenBank(${query.gene})"
         err.println query
@@ -988,6 +989,7 @@ def void outputGenBank(Expando query, Map<String,String> ipdNucMap, PrintWriter 
         geneStart += startIndex
         geneEnd += startIndex
     }
+    gbOut.println ">Feature gb|${id}|"
     gbOut.println "${geneStart}\t${geneEnd}\tgene"
     gbOut.println "\t\t\tgene\t${query.gene}"
     outcall = query.gcall
@@ -1052,8 +1054,8 @@ issue with e.g., 2DP1
 pseudo
         if(pseudo == true) {
             gbOut.println "${start}\t${end}\texon"
-            gbOut.println "\t\t\tgene=${query.gene}"
-            gbOut.println "\t\t\tnumber=${i+1}"
+            gbOut.println "\t\t\tgene\t${query.gene}"
+            gbOut.println "\t\t\tnumber\t${i+1}"
         } else {
             if(i == 0) {
                 gbOut.println "${start}\t${end}\tmRNA"
