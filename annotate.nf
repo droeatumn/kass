@@ -23,14 +23,18 @@ params.bowtie = "-a --end-to-end --rdg 3,3 --rfg 3,3"
 params.threads = "28"
 params.container = "droeatumn/kass:latest"
 params.nocontainer = "null"
-params.sbt = home + "/input/SubmissionTemplate.sbt"
+params.sbt = null
 
 refAlleleDir = file("${home}/input/references/genes")
 featuresFile = file("${home}/input/features.txt") // markup features
 markerFile = file("${home}/input/cap.fasta") // capture markers
 alignProbesFile = file("${home}/src/alignment2ProbePairs.groovy")
 annotateFile = file("${home}/src/annotateMarkup.groovy")
-sbtFile = file("${params.sbt}")
+if(params.sbt == null) { 
+    sbtFile = home + "/input/SubmissionTemplate.sbt"
+} else { 
+    sbtFile = file(params.raw + "/" + params.sbt)
+}
 
 raw = "${params.raw}/*{fasta,fa,fasta.gz,fa.gz}"
 reads = Channel.fromPath(raw).ifEmpty { error "cannot find any reads matching ${raw}" }.map { path -> tuple(sample(path), path) }
