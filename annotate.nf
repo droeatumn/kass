@@ -217,7 +217,7 @@ process alleles {
     if(params.nocontainer == "null") { 
         container = params.container
     }
-//    publishDir params.output, mode: 'copy', overwrite: true
+    publishDir params.output, mode: 'copy', overwrite: true
     tag { s }
 
   input:
@@ -238,7 +238,7 @@ process alleles {
     /root/augustus/scripts/getAnnoFasta.pl --seqfile ${r} ${g} 2> ${s}_${locus}_getAnnoFasta_err.txt
     # aa and codingseq
     /root/augustus/scripts/getAnnoFastaFromJoingenes.py -g ${r} -3 ${g} -o ${s}_${locus}_augustus 2> ${s}_${locus}_getAnnoFastaFromJoingenes_err.txt
-    gff2ftGene.groovy -g ${fullLocus} -i ${refAlleleDir} -f ${g} -s ${r} -o ${s}_${fullLocus}.ft.txt -l ${s}_${fullLocus}.gl.txt 2> ${s}_${locus}.alleles_err.txt
+    gff2ftGene.groovy -g ${fullLocus} -i ${refAlleleDir} -f ${g} -s ${r} -l ${s}_${fullLocus}.gl.txt 2> ${s}_${locus}.alleles_err.txt
     augustus2NCBI.groovy -g ${fullLocus} -i ${refAlleleDir} -f ${s}_${locus}_augustus.gff -s ${r} -l ${s}_${fullLocus}.gl.txt 2> ${s}_${locus}_aug2NCBI_err.txt
     """
 } // alleles
