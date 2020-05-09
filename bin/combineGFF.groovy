@@ -65,7 +65,10 @@ void loadGFF(iReader, idPosGffTable) {
             (desc, posTmp) = id.split('-')
             position = posTmp.toInteger()
             return
-        }
+        } else if(l.contains("\tlocus_tag\t")) { // remove locus_tag
+            return
+        } /*else if(l.contains("\tprotein_id\t")) { // no protein_id in tbl (ncbi)
+            return*/
         featureString += l + '\n'
     } // each input line
     if(debugging <= 3) {
