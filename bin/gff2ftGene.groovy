@@ -1,6 +1,6 @@
 #!/usr/bin/env groovy
 /*
- * Convert multi-gene GFF format (as output from chrishah/premaker-plus AUGUSTUS) to 
+ * Convert multi-gene GFF format (as output from AUGUSTUS) to 
  *   1. A Feature Table as required for sequence submission to GenBank.
  *      1-based indexes
  *   2. Three GL strings containg IMGT/IPD interpretations: 
@@ -50,7 +50,7 @@ import org.dishevelled.commandline.argument.*
 import groovy.transform.Field
 
 // things that may change per run
-debugging = 3 // TRACE=1, WARN=2, DEBUG=3, INFO=4, ERROR=5
+debugging = 1 // TRACE=1, WARN=2, DEBUG=3, INFO=4, ERROR=5
 @Field final String GENE_SYSTEM
 @Field final String GENE_NAME
 @Field final String KIR_NOMEN_VER = "IPD-KIR 3.9.0"
@@ -1002,7 +1002,6 @@ def void outputGenBank(String id, Expando query, Map<String,String> ipdNucMap,
         gbOut.println "\t\t\tnote\tnew full-gene allele in ${NOMEN_VER}"
     }
     if(pseudo == true) {
-        gbOut.println "\t\t\tnote\tpseudo"
         gbOut.println "\t\t\tnote\tpseudogene=\"unprocessed\""
 
     }
@@ -1049,9 +1048,9 @@ issue with e.g., 2DP1
             end += startIndex
         }
         if(debugging <= 2) {
-            err.println "outputGenBank: ${start}-${end} = ${length}"
+            err.println "outputGenBank: ${start}-${end} = ${length}, pseudo=${pseudo}"
         }
-pseudo
+
         if(pseudo == true) {
             gbOut.println "${start}\t${end}\texon"
             gbOut.println "\t\t\tgene\t${query.gene}"
@@ -1104,11 +1103,13 @@ pseudo
             }
         } // each exon
 
-        gbOut.println "\t\t\tgene\t${query.gene}"
-        if(GENE_SYSTEM == "KIR") { // todo: implement for HLA too
-            outputProduct(query.gene, gbOut)
+        if(!query.gene.contains("2DP1") && !query.gene.contains("3DP1")) {
+            gbOut.println "\t\t\tgene\t${query.gene}"
+            if(GENE_SYSTEM == "KIR") { // todo: implement for HLA too
+                outputProduct(query.gene, gbOut)
+            }
         }
-        gbOut.println "\t\t\tcodon_start\t1"
+        //gbOut.println "\t\t\tcodon_start\t1"
     } // CDS
 
     if(debugging <= 1) {
