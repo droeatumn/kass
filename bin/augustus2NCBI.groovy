@@ -142,7 +142,9 @@ def void outputGFF(Expando query, Map<String,String> ipdNucMap, PrintWriter gbOu
             break
         }
     }
-    //err.println "partial=${partial}"//remove(todo)
+	if(debugging <= 2) {
+        err.println "partial=${partial}"
+    }
     gffLines.each { l ->
 	    if(debugging <= 2) {
 		    err.println "outputGFF: l=${l}"
@@ -171,7 +173,7 @@ def void outputGFF(Expando query, Map<String,String> ipdNucMap, PrintWriter gbOu
         start = start + coordStart
         end = end + coordStart
 	    if(debugging <= 2) {
-		    err.println "outputGFF: new feature start=${start}, new feature end=${end}"
+		    err.println "outputGFF: new feature start=${start}, new feature end=${end}, type=${type}"
 	    }
         descTmp = desc[0..coordStartIndex-1]
         locusIndex = descTmp.lastIndexOf('_')
@@ -194,7 +196,12 @@ def void outputGFF(Expando query, Map<String,String> ipdNucMap, PrintWriter gbOu
             gbOut.println "# Feature:${initialDesc}-${coordStart}"
             if(bestAllele != null) { 
                 att += "; gene=${bestGene}; allele=${bestAllele}"
-                att += "; note=${KIR_NOMEN_VER}"
+                att += "; note=annotated as of ${KIR_NOMEN_VER}"
+            } else {
+                att += "; gene=${query.gene}"
+                if(partial == true) { 
+                    att += "; note=partial"
+                }
             }
             if(query.gene.contains("2DP1") || query.gene.contains("3DP1") ||
                (partial == true)) {
@@ -203,7 +210,14 @@ def void outputGFF(Expando query, Map<String,String> ipdNucMap, PrintWriter gbOu
             }
             att += "; locus_tag=KIR_${coordStart}"
         } else if(type == "mRNA") {
-            att += "; product=Killer cell immunoglobulin-like receptor"
+            att += "; product=killer cell immunoglobulin-like receptor"
+        } else if(type == "CDS") {
+            if(query.gene.contains("2DP1") || query.gene.contains("3DP1")) {
+                type = "exon"
+            }
+        }
+        if(debugging <= 1) {
+            err.println "outputGFF: att=${att}"
         }
 
         gbOut.println "" + [initialDesc, l[eFormat.AUGUSTUS], type, start, end,
