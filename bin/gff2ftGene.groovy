@@ -50,7 +50,7 @@ import org.dishevelled.commandline.argument.*
 import groovy.transform.Field
 
 // things that may change per run
-debugging = 1 // TRACE=1, WARN=2, DEBUG=3, INFO=4, ERROR=5
+debugging = 3 // TRACE=1, WARN=2, DEBUG=3, INFO=4, ERROR=5
 @Field final String GENE_SYSTEM
 @Field final String GENE_NAME
 @Field final String KIR_NOMEN_VER = "IPD-KIR 3.9.0"
@@ -344,6 +344,10 @@ def Expando processGFFGene(Expando eFormat, ArrayList line,
             e.augustusGeneID="${gene}.${transcript}"   // e.g., g1.t1
             e.gene = GENE_NAME
         } else if(type == "CDS") { // or "exon"
+            if((end-start+1) == 11) { // ignore CDS of length 11 in 2DS4
+                line = listReader.read()
+                continue;
+            }
             e.exonStartTreeSet.add(start)
             e.exonEndTreeSet.add(end)
             if(debugging <= 3) {
@@ -1030,11 +1034,12 @@ def void outputGenBank(String id, Expando query, Map<String,String> ipdNucMap,
         }
         //start = query.exonStartMap[i] ? query.exonStartMap[i] : 0
         start = siter.next()
-        if(i == 0) { // for exon 1, include 5' UTR
+/*        if(i == 0) { // for exon 1, include 5' UTR 
             if(query.start5p < start) { 
                 start = query.start5p
             }
         }
+*/
         //todo end = query.exonEndMap[i] ? query.exonEndMap[i] : 0
         end = eiter.next()
 /*        if((i+1) == numExons) { // for last exon, include 3' UTR
@@ -1375,10 +1380,9 @@ def void correctAugustus(Expando v, Map<String, String> ipdNucMap, Map<String, S
     if(debugging <= 1) {
         err.println "correctAugustus(ID=${v.id}, gene=${v.gene})"
     }
-    if(!gene.contains("2DP1") && !gene.contains("3DP1")) {
+    if(gene.contains("2DP1") || gene.contains("3DP1")) {
         return
     }
-
     cDNANew = new String() // the new cDNA sequence
     numExons = v.exonStartTreeSet.size()//left off: wrong here
     if(debugging <= 2) {
@@ -1452,6 +1456,20 @@ def void correctAugustus(Expando v, Map<String, String> ipdNucMap, Map<String, S
             }
             startToRemove.add(start)
             startToAdd.add(newStart)
+/*        } else if(v.gene.contains("S4")) {
+            if(length == 272) {
+                newEnd = start + 294 - 1
+                if(debugging <= 2) {
+                    seqTmp = v.sequence.getSequenceAsString()
+                    newExon = seqTmp[start-1..newEnd-1]
+                    err.println "correctAugustus: new 2DS4 exon 5(4): ${newExon}"
+                }
+            }
+            if(end != newEnd) { 
+                endToRemove.add(end)
+                endToAdd.add(newEnd)
+            }
+*/
         } else if(!KIR_EXON_SIZES.contains(length)) {
             if(debugging <= 4) { 
                 err.println "correctAugustus WARNING: skipping exon ${i} length ${length} (${end}-${start}) for ${v.gene}, ${v.id}"
