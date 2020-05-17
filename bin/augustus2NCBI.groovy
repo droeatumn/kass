@@ -113,6 +113,7 @@ def void outputGFF(Expando query, Map<String,String> ipdNucMap, PrintWriter gbOu
     Expando eFormat = initGFF()
 
     // get best IPD-KIR call
+    String gene = query.gene
     String bestGene = null
     String bestAllele = null
     String bestRes = null
@@ -134,7 +135,7 @@ def void outputGFF(Expando query, Map<String,String> ipdNucMap, PrintWriter gbOu
     }
 
     ArrayList<String> gffLines = query.newGFF
-    partial = true // marking partial if 7 exons or less
+    partial = true // marking partial if 7 exons or less; improve(todo)
     for(int i; i < gffLines.size(); i++) { 
         l = gffLines[i].join('\t')
         if(l.contains("CDS8")) {
@@ -142,8 +143,19 @@ def void outputGFF(Expando query, Map<String,String> ipdNucMap, PrintWriter gbOu
             break
         }
     }
+    if(gene.contains("3DL2")) {
+        startLastExon = query.exonStartTreeSet.last()
+        endLastExon = query.exonEndTreeSet.last()
+        Integer length = endLastExon - startLastExon + 1
+	    if(debugging <= 2) {
+            err.println "outputGFF: 3DL2 last exon length = ${length}"
+        }
+        if(length < 210) {
+            partial = true
+        }
+    }
 	if(debugging <= 2) {
-        err.println "partial=${partial}"
+        err.println "outputGFF: partial=${partial}"
     }
     gffLines.each { l ->
 	    if(debugging <= 2) {
@@ -203,19 +215,21 @@ def void outputGFF(Expando query, Map<String,String> ipdNucMap, PrintWriter gbOu
                     att += "; note=partial"
                 }
             }
-            if(query.gene.contains("2DP1") || query.gene.contains("3DP1") ||
-               (partial == true)) {
+            if(query.gene.contains("2DP1") || query.gene.contains("3DP1")) {
+//               (partial == true)) {
                 // http://www.insdc.org/documents/pseudogene-qualifier-vocabulary
                 att += "; pseudogene=unprocessed"
             }
-            att += "; locus_tag=KIR_${coordStart}"
+//            att += "; locus_tag=KIR_${coordStart}"
         } else if(type == "mRNA") {
             att += "; product=killer cell immunoglobulin-like receptor"
         } else if(type == "CDS") {
             if(query.gene.contains("2DP1") || query.gene.contains("3DP1")) {
                 type = "exon"
             }
+            att += "; product=killer cell immunoglobulin-like receptor"
         }
+
         if(debugging <= 1) {
             err.println "outputGFF: att=${att}"
         }
