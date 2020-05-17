@@ -265,6 +265,7 @@ process publishGL {
 /*
  * Combine the per-feature GFFs into the per contig annotation.
  * Run through table2asn_GFF to create the NCBI gff, sqn, and a report.
+ * @todo have to add partial "<" and ">" here
  */
 process combineGFF {
     if(params.nocontainer == "null") { 
@@ -283,9 +284,11 @@ process combineGFF {
     script:
     """
     echo "${modGFF}, ${desc}, ${inContig}"
-    combineGFF.groovy -i mod.gff -o .
+    combineGFF.groovy -i mod.gff -o . 2> combineGFF_${desc}_err.txt
     linux64.table2asn_GFF -augustus-fix -f ${desc}.gff -i ${inContig} -outdir . -genbank -verbose -euk -V b -Z  -t ${sbtF} -j "[organism=Homo sapiens]"
     gbf2tbl.pl ${desc}.gbf
+    cat ${desc}.tbl | grep -v protein_id > tmp.tbl
+    mv tmp.tbl ${desc}.tbl
     """
 } // combineGFF
 
@@ -307,7 +310,7 @@ process combineFT {
     if [ ! -f mod.ft.txt ]; then
         cp *.ft.txt mod.ft.txt
     fi
-    combineFT.groovy -i mod.ft.txt
+    combineFT.groovy -i mod.ft.txt 2> combineFT_err.txt
     """
 } // combineFT
 
