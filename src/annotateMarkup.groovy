@@ -408,13 +408,13 @@ ArrayList extractDNA(String desc, String previousGeneNomen, String nomenStr,
 	int i = markupIndex + workingMarkupIndex
 	int ie = markupEndIndex + workingMarkupIndex
 	if(debugging <= 2) {
-		err.println "${dnaLocationsList.size()} items in ${dnaLocationsList}"
-		err.println "markupIndex=${markupIndex}"
-		err.println "markupEndIndex=${markupEndIndex}"
-		err.println "workingMarkupIndex=${workingMarkupIndex} (${dnaLocationsList[markupEndIndex]})"
+		err.println "extractDNA: ${dnaLocationsList.size()} items in ${dnaLocationsList}"
+		err.println "extractDNA: markupIndex=${markupIndex}"
+		err.println "extractDNA: markupEndIndex=${markupEndIndex}"
+		err.println "extractDNA: workingMarkupIndex=${workingMarkupIndex} (${dnaLocationsList[markupEndIndex]})"
 		err.println "i=${i}, ie=${ie}"
-		err.println "dnaLocationsList[{$i}]=${dnaLocationsList[i]}"
-		err.println "dnaLocationsList[${markupEndIndex} + ${workingMarkupIndex}]=" + dnaLocationsList[ie]
+		err.println "extractDNA: dnaLocationsList[{$i}]=${dnaLocationsList[i]}"
+		err.println "extractDNA: dnaLocationsList[${markupEndIndex} + ${workingMarkupIndex}]=" + dnaLocationsList[ie]
 	}
 	Integer dnaIndex = dnaLocationsList[i]
 	Integer dnaEndIndex = dnaLocationsList[ie]
@@ -424,10 +424,20 @@ ArrayList extractDNA(String desc, String previousGeneNomen, String nomenStr,
 		} else if(geneNomen == "3DL2") {
 			dnaEndIndex = -1
 		}
-	}
+	} else if(geneNomen == "2DL5") {
+        // needs more padding on proximal(centromeric) end
+        dnaIndex -= 3500
+    } else if(geneNomen == "3DL2") {
+        // needs more padding on proximal(centromeric) end
+        dnaIndex -= 200
+    } else if(geneNomen == "2DL2L3S3S4S5") {
+        // 2DS4 needs more padding on both ends
+        dnaIndex -= 300
+        dnaEndIndex += 300
+    }
 	if(debugging <= 2) {
-		err.println "dnaIndex=${dnaIndex}"
-		err.println "dnaEndIndex=${dnaEndIndex}"
+		err.println "extractDNA: dnaIndex=${dnaIndex}"
+		err.println "extractDNA: dnaEndIndex=${dnaEndIndex}"
 	}
 	dnaEndIndexStore = dnaEndIndex
 	if(dnaEndIndex == -1) {
