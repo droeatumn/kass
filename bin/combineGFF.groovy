@@ -1,7 +1,7 @@
 #!/usr/bin/env groovy
 /*
  * Combine multi-contig, multi-gene GFF into one per contig.
- *
+ * Output is <description>.gff
  * @author Dave Roe
  * @todo could take a fasta file and only output the gff for that one
  */
@@ -67,8 +67,9 @@ void loadGFF(iReader, idPosGffTable) {
             return
         } else if(l.contains("\tlocus_tag\t")) { // remove locus_tag
             return
-        } /*else if(l.contains("\tprotein_id\t")) { // no protein_id in tbl (ncbi)
-            return*/
+        } else if(l.contains("UTR\t")) { // remove five and three_prime_UTR
+            return
+        }
         featureString += l + '\n'
     } // each input line
     if(debugging <= 3) {
