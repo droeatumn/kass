@@ -50,7 +50,7 @@ import org.dishevelled.commandline.argument.*
 import groovy.transform.Field
 
 // things that may change per run
-debugging = 3 // TRACE=1, WARN=2, DEBUG=3, INFO=4, ERROR=5
+debugging = 1 // TRACE=1, WARN=2, DEBUG=3, INFO=4, ERROR=5
 @Field final String GENE_SYSTEM
 @Field final String GENE_NAME
 @Field final String KIR_NOMEN_VER = "IPD-KIR 3.9.0"
@@ -106,7 +106,6 @@ featureMap.each { k, vList ->
             err.println "output feature ${k} ${v}"
         }
         outputGenBankSource(gbWriter, v)
-        gbWriter.println ">Feature ${v.id}"
         correctAugustus(v, ipdNucMap, ipdGeneMap) // reannotate 2DP1 and 3DP1
         if(debugging <= 2) { 
             err.println "after correctAugustus full match, gene now ${v.gene}, pcall now ${v.pcall}, ccall now ${v.ccall}, gcall now ${v.gcall}"
@@ -1034,19 +1033,18 @@ def void outputGenBank(String id, Expando query, Map<String,String> ipdNucMap,
         }
         //start = query.exonStartMap[i] ? query.exonStartMap[i] : 0
         start = siter.next()
-/*        if(i == 0) { // for exon 1, include 5' UTR 
+        if(i == 0) { // for exon 1, include 5' UTR 
             if(query.start5p < start) { 
                 start = query.start5p
             }
         }
-*/
+
         //todo end = query.exonEndMap[i] ? query.exonEndMap[i] : 0
         end = eiter.next()
-/*        if((i+1) == numExons) { // for last exon, include 3' UTR
+        if((i+1) == numExons) { // for last exon, include 3' UTR
             end = query.end3p
         }
-issue with e.g., 2DP1
-*/
+
         length = end - start + 1
         if(startIndex != 1) {
             start += startIndex
