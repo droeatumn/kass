@@ -108,7 +108,8 @@ void loadTbl(tReader, PrintWriter writer) {
         writer.println l1Split.join('\t')
         l1Split = l2Split
     } // each line
-        
+    writer.println l2Split.join('\t')
+
 } // loadTbl
 
 /*
