@@ -205,6 +205,7 @@ def void outputGFF(Expando query, Map<String,String> ipdNucMap, PrintWriter gbOu
         //err.println "id=${id}, type=${type}, idNew=${idNew}, new att: ${att}"//todo
         // add IPD-KIR gene and allele annotation to gene type
         if(type == "gene") {
+            // needed by combineGFF.groovy
             gbOut.println "# Feature:${initialDesc}-${coordStart}"
             if(bestAllele != null) { 
                 att += "; gene=${bestGene}; allele=${bestAllele}"
