@@ -288,12 +288,13 @@ process combineGFF {
     linux64.table2asn_GFF -augustus-fix -f ${desc}.gff -i ${inContig} -outdir . -genbank -verbose -euk -V b -Z  -t ${sbtF} -j "[organism=Homo sapiens]"
     gbf2tbl.pl ${desc}.gbf
     cat ${desc}.tbl | grep -v protein_id > tmp.tbl
-    mv tmp.tbl ${desc}.tbl
+    modifyTbl.groovy -i tmp.tbl -o ${desc}.tbl
     """
 } // combineGFF
 
 /*
  * Combine the per-feature feature tables into the per contig annotation.
+ * @todo this isn't working; not collecting the files like expected
  */
 process combineFT {
     if(params.nocontainer == "null") { 
