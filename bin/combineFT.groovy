@@ -42,7 +42,8 @@ ids.each { i ->
             featuresFull += featureTmp
         }
     }
-    outName = i.replaceFirst(/gb\\|/, "")
+    outName = i
+//    outName = i.replaceFirst(/gb\\|/, "")
     PrintWriter writer = new PrintWriter(new File("${outName}.ft.txt").newOutputStream(), true)
     writer.println ">${i}"
     writer.println featuresFull
@@ -54,19 +55,28 @@ void loadFT(tReader, idPosFtTable) {
     String desc = null
     Integer position = null
     String featureString = ""
+    String geneLine = ""
+    Boolean pastGene = false
     //    while(l = tReader.readLine()) {
     for (String l = tReader.readLine(); l != null; l = tReader.readLine()) {
-
-        err.println l//todo
+        lSplit = l.split('\t')
+        if(debugging <= 2) {
+            err.println "loadFT: l=${l}"
+            err.println "loadFT: lSplit size=${lSplit.size()}"
+        }
+        
         if(l.startsWith(">Feature")) {
             if(desc != null) {
                 if(debugging <= 3) {
 	                err.println "(${desc}, ${position}) = ${featureString}"
+                    err.println "geneLine = ${geneLine}"
                 }
+                featureString = geneLine + '\n' + featureString
                 idPosFtTable.put(desc, position, featureString)
                 desc = null
                 position = null
                 featureString = ""
+                geneLine = ""
             }
             (fStr,id) = l.split('Feature ')
             // separation location
@@ -79,10 +89,11 @@ void loadFT(tReader, idPosFtTable) {
             posTmp = id[idx+1..-1]
             (posTmp, end) = posTmp.split('-')
             position = posTmp.toInteger()
+            pastGene = false
             continue
         } else if(l.contains("db_xref")) { // remove db_xref
             continue
-        } else if(desc == null) {    // skip stuff before first feature; source, etc.
+        } else if(desc == null) {  // skip stuff before first feature; source, etc.
             // todo: this only works for the first one (todo)
             continue
         } else if(l.contains("source")) {    // skip stuff before first feature; source, etc.
@@ -92,14 +103,26 @@ void loadFT(tReader, idPosFtTable) {
                 tReader.readLine()
             }
             continue
+        } else if((lSplit.size() > 2) && (lSplit[2] == "gene")) {
+            if(debugging <= 3) {
+                err.println "gene line found: ${l}"
+            }
+            geneLine = l
+            continue
+        } else if(l.contains("mRNA")) {
+            pastGene = true
+        } else if(l.contains("\tallele\t") && (pastGene == true)) {
+            // remove the 'allele' from mRNA and CDS sections
+            return
         }
-        err.println "adding l"
+
         featureString += l + '\n'
     } // while
-
     if(debugging <= 3) {
 	    err.println "(${desc}, ${position}) = ${featureString}"
+        err.println "geneLine = ${geneLine}"
     }
+    featureString = geneLine + '\n' + featureString
     idPosFtTable.put(desc, position, featureString)
 } // loadFT
 
