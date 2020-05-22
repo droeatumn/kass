@@ -62,7 +62,7 @@ process structure {
   output:
 //    set s, file {"*_sorted.bam*"} into bamOutput
 //    tuple val(s), file("*_sorted.bam"), file("*_sorted.bam.bai"), file(r) into bamOutput
-//    tuple s, file{"${s}*_markup.txt"} into markup
+    tuple s, file{"${s}*_markup.txt"} into markup
     tuple s, path{"${s}*_annotation.txt"} into annotation
 //    tuple s, path{"${s}*_annotation_strings.txt"} into annotationStrings
     tuple s, path{r}, path{"${s}*_features.fasta"} into features mode flatten
@@ -288,7 +288,8 @@ process combineGFF {
     linux64.table2asn_GFF -augustus-fix -f ${desc}.gff -i ${inContig} -outdir . -genbank -verbose -euk -V b -Z  -t ${sbtF} -j "[organism=Homo sapiens]"
     gbf2tbl.pl ${desc}.gbf
     cat ${desc}.tbl | grep -v protein_id > tmp.tbl
-    modifyTbl.groovy -i tmp.tbl -o ${desc}.tbl
+    modifyTbl.groovy -i tmp.tbl -o ${desc}.tbl 2> ${desc}_tbl_err.txt
+    mv tmp.tbl tmp.tbl.bak
     """
 } // combineGFF
 
