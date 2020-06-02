@@ -62,12 +62,31 @@ void loadTbl(tReader, PrintWriter writer) {
             // add 3' UTR unless partial 3DL2; previous line
             if(!((partial == true) && gene.contains("3DL2"))) {
                 l1Split[1] = end // add 3' UTR
+            } else if(gene.contains("3DL2")) {
+                start = l1Split[0].toInteger()
+                end = l1Split[1].toInteger()
+                err.println "in 1 3DL2 ${end} - ${start} - 1: ${end-start+1}"//todo
+                err.println "l1Split=${l1Split}"//todo
+                if(end-start+1 == 329) {
+                    err.println "changing 3DL2 ${end-start+1} into 294"//todo
+                    l1Split[1] = start + 294 - 1
+                }
             }
             continue; // skip allele in mRNA
         } else if((l2SplitSize > 3) &&
                   (att.startsWith("allele") || att.startsWith("gene")) &&
                   ((currentSection == 1) || (currentSection == 2))) {
-            continue; // skip allele in CDS
+            if(gene.contains("3DL2")) {
+                start = l1Split[0].toInteger()
+                end = l1Split[1].toInteger()
+                err.println "in 1 or two 3DL2 ${end} - ${start} - 1: ${end-start+1}"//todo
+                err.println "l1Split=${l1Split}"//todo
+                if((end-start+1 == 329) || (end-start+1 == 625)) {
+                    err.println "changing 3DL2 ${end-start+1} into 294"//todo
+                    l1Split[1] = start + 294 - 1
+                }
+            }
+            continue; // skip gene and allele in CDS
         } /*else if((l2SplitSize > 3) && att.startsWith("codon_start") &&
                   (currentSection == 2)) {
             (cs, num) = att.split('\t')
@@ -78,8 +97,10 @@ void loadTbl(tReader, PrintWriter writer) {
                 l1Split = l2Split.collect()
             }
         } */ else if((l2SplitSize > 3) && att.startsWith("product") &&
-                  (currentSection == 2)) {
-            
+                  (currentSection == 2)) {            
+            if(gene.contains("DP")) { // skip CDS in pseudo genes 2DP1, 3DP1
+                continue;
+            }
             cs = l1Split[3]
             num = l1Split[4]
             if(cs.startsWith("codon") && (num != "1")) { 
@@ -90,9 +111,12 @@ void loadTbl(tReader, PrintWriter writer) {
             // add transl_table
             l2Split[3] = "transl_table"
             l2Split[4] = "1"
+        } else if((l2SplitSize > 3) && (gene.contains("DP") == true) &&
+                  (currentSection == 2)) { // skip CDS stuff in pseudos 2DP1, 3DP1
+            continue;
         } else if((l2SplitSize > 2) && (l2Split[2] == "gene")) {
-            start = l2Split[0]
-            end = l2Split[1]
+            start = l2Split[0].toInteger()
+            end = l2Split[1].toInteger()
             partial = false
             currentSection = 0
             gene = null
@@ -104,7 +128,11 @@ void loadTbl(tReader, PrintWriter writer) {
             currentSection = 1
         } else if((l2SplitSize > 2) && (l2Split[2] == "CDS")) {
             currentSection = 2
+            if(gene.contains("DP")) { // skip CDS in pseudo genes 2DP1, 3DP1
+                continue; 
+            }
         }
+
         writer.println l1Split.join('\t')
         l1Split = l2Split
     } // each line
