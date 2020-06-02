@@ -421,27 +421,46 @@ ArrayList extractDNA(String desc, String previousGeneNomen, String nomenStr,
 	if(partial == true) {
 		if(geneNomen == "3DL3") {
 			dnaIndex = 0
-		} else if(geneNomen == "3DL2") {
-			dnaEndIndex = -1
+		} else if(geneNomen == "3DL1L2"){
+//            dnaIndex -= 5000 // not for MN167507
+			dnaEndIndex = dnaFasta.length() - 1
 		}
 	} else if(geneNomen == "2DL5") {
         // needs more padding on proximal(centromeric) end
         dnaIndex -= 3500
+    } else if(geneNomen == "3DL1S1") {
+        // needs more padding on proximal(centromeric) end
+        dnaEndIndex += 2500
+    } else if(geneNomen == "3DL1L2") { // for the fusion
+        // needs more padding on proximal(centromeric) end
+        // and distal (telomeric) end
+//todo(put bak? test wih MN167530)        dnaIndex -= 200
+        dnaIndex -= 2400
+        dnaEndIndex += 2000
     } else if(geneNomen == "3DL2") {
         // needs more padding on proximal(centromeric) end
-        dnaIndex -= 200
-    } else if(geneNomen == "2DL2L3S3S4S5") {
+        // and distal (telomeric) end
+//todo(put bak? test wih MN167530)        dnaIndex -= 200
+        dnaIndex -= 5000
+        dnaEndIndex += dnaFasta.length() - 1
+    } else if(geneNomen == "3DP1") {
+        // needs more padding on distal(telomeric) end
+        dnaEndIndex += 2000
+    } else if((geneNomen == "2DL2L3S3S4S5") || (geneNomen == "2DS4") 
+              || (geneNomen == "2DL2")) {
+//    } else if((geneNomen == "2DL2L3S3S4S5")) {
         // 2DS4 needs more padding on both ends
-        dnaIndex -= 300
-        dnaEndIndex += 300
+        dnaIndex -= 2000 // MN167521 2DS4 and MN167525 2DL2
+//        dnaEndIndex += 1500 // sometimes shouldn't be used
     }
 	if(debugging <= 2) {
 		err.println "extractDNA: dnaIndex=${dnaIndex}"
 		err.println "extractDNA: dnaEndIndex=${dnaEndIndex}"
 	}
 	dnaEndIndexStore = dnaEndIndex
-	if(dnaEndIndex == -1) {
+	if((dnaEndIndex == -1) || (dnaEndIndex > dnaFasta.length()-1)) {
 		dnaEndIndexStore = dnaFasta.length() - 1
+        dnaEndIndex = dnaFasta.length() - 1
 	}
 	geneDNA = dnaFasta[dnaIndex..dnaEndIndex]
 	haplotypeLocus = geneToHaplotypeLocus(previousGeneNomen, nomenStr,
@@ -457,14 +476,29 @@ ArrayList extractDNA(String desc, String previousGeneNomen, String nomenStr,
 		descGeneSeqTable.put(desc, haplotypeLocus, seqList)
 		descGeneStartIndexTable.put(desc, haplotypeLocus, startList)
 		descGeneEndIndexTable.put(desc, haplotypeLocus, endList)
-	} else {
+	}
+    else {
 		if(debugging <= 4) {
 			err.println "extractDNA: multiple sequences for ${haplotypeLocus} in ${desc}"
+//            err.println "keeping the longer one"// todo: maybe not the best?
 		}
+  // this doesn't work with multiple different genes (e.g., 2DL2L3S3S4S5)
+  // but is needed for some genes with g1 g2 etc from augustus
+  /*        String firstSeq = seqList[0]
+          if(firstSeq.length() < (dnaEndIndexStore - dnaIndex)) {
+		    seqList[0] = geneDNA
+            descGeneStartIndexTable.get(desc, haplotypeLocus).clear()
+            descGeneEndIndexTable.get(desc, haplotypeLocus).clear()
+*/
 		seqList.add(geneDNA)
-		descGeneStartIndexTable.get(desc, haplotypeLocus).add(dnaIndex)
-		descGeneEndIndexTable.get(desc, haplotypeLocus).add(dnaEndIndexStore)
+		startList.add(dnaIndex)
+		endList.add(dnaEndIndexStore)
+		descGeneSeqTable.put(desc, haplotypeLocus, seqList)
+		    descGeneStartIndexTable.get(desc, haplotypeLocus).add(dnaIndex)
+		    descGeneEndIndexTable.get(desc, haplotypeLocus).add(dnaEndIndexStore)
+//        }
 	}
+
 	if(debugging <= 2) {
 		err.println "extractDNA: putting value in descGeneSeqTable: ${desc}, ${haplotypeLocus} = DNA of size ${geneDNA.length()}"
 		err.println "extractDNA: ${dnaIndex} - ${dnaEndIndexStore}"
