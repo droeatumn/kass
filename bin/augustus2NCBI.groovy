@@ -37,11 +37,11 @@ debugging = 3 // TRACE=1, WARN=2, DEBUG=3, INFO=4, ERROR=5
 
 @Field final String GENE_SYSTEM
 @Field final String GENE_NAME
-@Field final String KIR_NOMEN_VER = "IPD-KIR 3.9.0"
+@Field final String KIR_NOMEN_VER = "IPD-KIR 2.9.0"
 @Field final String HLA_NOMEN_VER = "IMGT/HLA 3.22.0"
 @Field String NOMEN_VER // tbd by input: KIR_NOMEN_VER or HLA_NOMEN_VER
 // for now, just all the possible sizes
-@Field final KIR_EXON_SIZES = [34, 40, 36, 285, 300, 299, 294, 51, 102, 105, 53,
+@Field final KIR_EXON_SIZES = [34, 40, 36, 285, 300, 299, 294, 272, 51, 102, 105, 53,
                                177, 42, 270, 8, 126, 210]
 @Field final String NEW_ALLELE = "NEW"
 
@@ -108,7 +108,6 @@ outputGLs(featureList, outGLFile)
 def void outputGFF(Expando query, Map<String,String> ipdNucMap, PrintWriter gbOut) {
     if(debugging <= 1) {
         err.println "outputGFF(${query.gene})"
-//        err.println query
     }
     Expando eFormat = initGFF()
 
@@ -143,20 +142,26 @@ def void outputGFF(Expando query, Map<String,String> ipdNucMap, PrintWriter gbOu
             break
         }
     }
-    if(gene.contains("3DL2")) {
+    if(gene.contains("3DL2") || gene.contains("3DL1")) {
         startLastExon = query.exonStartTreeSet.last()
         endLastExon = query.exonEndTreeSet.last()
         Integer length = endLastExon - startLastExon + 1
 	    if(debugging <= 2) {
-            err.println "outputGFF: 3DL2 last exon length = ${length}"
+            err.println "outputGFF: 3DL2 last exon length = ${endLastExon}-${startLastExon} = ${length}"
         }
-        if(length < 210) {
+        if(!((length == 210) || (length == 177))) {
             partial = true
         }
     }
 	if(debugging <= 2) {
         err.println "outputGFF: partial=${partial}"
     }
+    // collect the exon start sites that have been output
+    TreeSet outputExonStarts = new TreeSet()
+    ArrayList<String> lastl = null
+    String lastCDSAtt = null
+    Integer coordStart = 0
+    Integer coordEnd = 0
     gffLines.each { l ->
 	    if(debugging <= 2) {
 		    err.println "outputGFF: l=${l}"
@@ -175,11 +180,11 @@ def void outputGFF(Expando query, Map<String,String> ipdNucMap, PrintWriter gbOu
         // lift the feature coordinates to the full contig/haplotype sequence
         // e.g., KP420440_2DL2L3S3S4S5_18152-34641
         coordStartIndex = desc.lastIndexOf('_')
-        (coordStart, coordEnd) = desc[coordStartIndex+1..-1].split('-')
-        Integer coordStart = coordStart.toInteger()
-        Integer coordEnd = coordEnd.toInteger()
+        (coordStartS, coordEndS) = desc[coordStartIndex+1..-1].split('-')
+        coordStart = coordStartS.toInteger()
+        coordEnd = coordEndS.toInteger()
 	    if(debugging <= 2) {
-		    err.println "outputGFF: desc=${desc}, coordStart=${coordStart}, coordEnd=${coordEnd}"
+		    err.println "outputGFF: desc=${desc}, coordStart=${coordStart}, coordEnd=${coordEnd} (${coordEnd-coordStart + 1} bp)"
             err.println "outputGFF: att=${att}"
 	    }
         start = start + coordStart
@@ -225,12 +230,23 @@ def void outputGFF(Expando query, Map<String,String> ipdNucMap, PrintWriter gbOu
         } else if(type == "mRNA") {
             att += "; product=killer cell immunoglobulin-like receptor"
         } else if(type == "CDS") {
+/*            start = start + coordStart
+            end = end + coordStart
+*/
+            // remove extra exon calls from augustus
+            err.println "start check = ${start - coordStart}, ${end - coordStart}"//todo
+            if(!(query.exonStartTreeSet.contains(start - coordStart) &&
+                 query.exonEndTreeSet.contains(end - coordStart))) {
+                err.println "cds returning"//todo
+                return
+            }
             if(query.gene.contains("2DP1") || query.gene.contains("3DP1")) {
                 type = "exon"
             }
             att += "; product=killer cell immunoglobulin-like receptor"
+            lastl = l.clone()//todo
+            lastCDSAtt = att
         }
-
         if(debugging <= 1) {
             err.println "outputGFF: att=${att}"
         }
@@ -238,7 +254,43 @@ def void outputGFF(Expando query, Map<String,String> ipdNucMap, PrintWriter gbOu
         gbOut.println "" + [initialDesc, l[eFormat.AUGUSTUS], type, start, end,
                             l[eFormat.SCORE], l[eFormat.STRAND], l[eFormat.PHASE],
                             att].join('\t')
+        outputExonStarts.add(start)
     }
+
+    // add the new exons from correctAugustus (3DL1L2 fusion)
+    // contains L1L2 doesn't work after assigned IPD-KIR name
+            if(query.gene.contains("3DL1") || query.gene.contains("3DL1L2")) { 
+	    if(debugging <= 2) {
+            err.println "add the new exons from correctAugustus (3DL1L2 fusion)"
+            err.println "outputExonStarts=${outputExonStarts}"
+            err.println "exonStartTreeSet=${query.exonStartTreeSet}"
+            err.println "lastl=${lastl}"
+        }
+    }
+    Iterator siter = query.exonStartTreeSet.iterator()
+    Iterator eiter = query.exonEndTreeSet.iterator()
+    for(; siter.hasNext();) {
+        Integer start = siter.next()
+        Integer end = eiter.next()
+        start = start + coordStart
+        end = end + coordStart
+	    if(debugging <= 2) {
+		    err.println "outputGFF: start=${start}, end=${end} (${end-start+1} bp)"
+	    }
+        if(outputExonStarts.contains(start)) {
+            continue
+        }
+	    if(debugging <= 2) {
+		    err.println "outputGFF: adding new feature start=${start}, new feature end=${end}, type=CDS"
+	    }
+
+        gbOut.println "" + [initialDesc, lastl[eFormat.AUGUSTUS], "CDS", start, end,
+                            lastl[eFormat.SCORE], lastl[eFormat.STRAND], lastl[eFormat.PHASE],
+                            lastCDSAtt].join('\t')
+
+    }
+
+
     if(debugging <= 1) {
         err.println "outputGFF: return"
     }
@@ -1329,7 +1381,10 @@ def void correctAugustus(Expando v, Map<String, String> ipdNucMap, Map<String, S
     if(debugging <= 1) {
         err.println "correctAugustus(ID=${v.id}, gene=${v.gene})"
     }
-    if(!gene.contains("2DP1") && !gene.contains("3DP1")) {
+    err.println "correctAugustus: sequence contains 34 bp 5=${v.sequence.getSequenceAsString().contains("ATGTCGCTCATGGTCGTCAGCATGGCGTGTGTTG")}"//todo
+    if(!(gene.contains("2DP1") || gene.contains("3DP1") || gene.contains("3DL1")
+         || gene.contains("3DL2") || gene.contains("2DL2L3S3S4S5") || gene.contains("2DS4")
+         || gene.contains("2DL1S1S2") || gene.contains("2DL4"))) {
         return
     }
 
@@ -1344,7 +1399,8 @@ def void correctAugustus(Expando v, Map<String, String> ipdNucMap, Map<String, S
     ArrayList<Integer> endToAdd = new ArrayList()
     ArrayList<Integer> endToRemove = new ArrayList()
     Iterator siter = v.exonStartTreeSet.iterator()
-    Iterator eiter = v.exonEndTreeSet.iterator()    
+    Iterator eiter = v.exonEndTreeSet.iterator()
+    Boolean delFound = false
     for(i=0; siter.hasNext(); i++) { 
         Integer start = siter.next()
         Integer end = eiter.next()
@@ -1364,7 +1420,7 @@ def void correctAugustus(Expando v, Map<String, String> ipdNucMap, Map<String, S
                 err.println "correctAugustus: exon ${i}, removing start=${start}, end=${end}, length=${length}"
             }
         }*/
-        if((i+1) == numExons) { // for last exon, include 3' UTR
+        if(((i+1) == numExons) && ((i == 8) || (i == 9))) { // for last exon, include 3' UTR
             // augustus has the correct end, but not start of last exon for 2DP1
             // augustus has the correct start, but not end of last exon for 3DP1
             if(v.gene.contains("2DP1")) {
@@ -1386,6 +1442,20 @@ def void correctAugustus(Expando v, Map<String, String> ipdNucMap, Map<String, S
                 //todo(keep?)newEnd = newStart + 177 - 1
             } else if(v.gene.contains("3DP1")) { 
                 newEnd = start + 294 - 1
+            } else if(v.gene.contains("2DS4")) {
+                if((length == 8) || (length == 126) || (delFound == true)) {
+                    err.println "correctAugustus: adding $end to endToRemove (2ds4 8 126)"
+                    startToRemove.add(start)
+                    endToRemove.add(end)
+                    continue
+                } /*else if(length == 272) {
+                    delFound = true
+                }*/
+            } else if(v.gene.contains("2DL4") && (length == 8)) {
+                err.println "correctAugustus: adding $end to endToRemove (2DL4 8)"
+                startToRemove.add(start)
+                endToRemove.add(end)
+                continue
             }
             if(debugging <= 2) {
                 err.println "correctAugustus: removing ${start}, ${end}"
@@ -1395,7 +1465,8 @@ def void correctAugustus(Expando v, Map<String, String> ipdNucMap, Map<String, S
                 startToRemove.add(start)
                 startToAdd.add(newStart)
             }
-            if(end != newEnd) { 
+            if(end != newEnd) {
+                err.println "correctAugustus: adding $end to endToRemove (first)"
                 endToRemove.add(end)
                 endToAdd.add(newEnd)
             }
@@ -1404,6 +1475,7 @@ def void correctAugustus(Expando v, Map<String, String> ipdNucMap, Map<String, S
             if((newEnd - newStart + 1) == 13) {
                 newStart = newEnd - 33
             }
+            err.println "correctAugustus: adding $end to endToRemove (first)"
             startToRemove.add(start)
             startToAdd.add(newStart)
         } else if(!KIR_EXON_SIZES.contains(length)) {
@@ -1413,8 +1485,35 @@ def void correctAugustus(Expando v, Map<String, String> ipdNucMap, Map<String, S
             startToRemove.add(start)
             endToRemove.add(end)
             continue
+        } else if(v.gene.contains("2DS4")) {
+            err.println "correctAugustus: adding $end to endToRemove (2DS4)"
+                if((length == 8) || (length == 126) || (delFound == true)) { 
+                    startToRemove.add(start)
+                    endToRemove.add(end)
+                    continue
+                } /*else if(length == 272) {
+                    delFound = true
+                }*/
+        } else if((v.gene.contains("3DS1") || v.gene.contains("3DL1S1")) && (length == 8)) {// not the last one
+            err.println "correctAugustus: adding $end to endToRemove (3DS1 +)"
+            startToRemove.add(start)
+            endToRemove.add(end)
+            continue            
+        } else if(v.gene.contains("2DL4") && (length == 8)) {
+            err.println "correctAugustus: adding $end to endToRemove (2DL4)"
+            startToRemove.add(start)
+            endToRemove.add(end)
+            continue            
+        } else if(v.gene.contains("3DL1L2") && (length == 42)) {
+            err.println "correctAugustus: adding $end to endToRemove (3DL1L2)"
+            startToRemove.add(start)
+            endToRemove.add(end)
+            continue            
         }
     } // each exon
+    if(debugging <= 4) { 
+        err.println "correctAugustus: after checking last exon, gene=${gene}"
+    }
     // also, add exon 8 for 2DP1
     if(gene.contains("2DP1")) {
         // exon '8' (including the pseudo exon)
@@ -1435,8 +1534,155 @@ def void correctAugustus(Expando v, Map<String, String> ipdNucMap, Map<String, S
             startToAdd.add(start8)
             endToAdd.add(end8)
         }
-    } // done adding exon 8
+    } else if(gene.contains("3DL1L2") || gene.contains("3DL2")) {
+        //todo: recreate in gff2ftGene.groovy
+        if(debugging <= 2) {
+            err.println "correctAugustus: adding exons to 3DL1L2 fusion or 3DL2 partial"
+        }
+        if(gene.contains("3DL2")) {
+            // exon 5
+            found = searchForExon(v, startToAdd, endToAdd, "GTCTATATGAGAAACCTTCTCTCTCAGCCCAGCCGGGCCCCACGGTTCAGGCAGGAGAGAACGTGACCTTGTCCTGTAGCTCCTGGAGCTCCTATGACATCTACCATCTGTCCAGGGAAGGGGAGGCCCATGAACGTAGGCTCCGTGCAGTGCCCAAGGTCAACAGAACATTCCAGGCAGACTTTCCTCTGGGCCCTGCCACCCACGGAGGGACCTACAGATGCTTCGGCTCTTTCCGTGCCCTGCCCTGCGTGTGGTCAAACTCAAGTGACCCACTGCTTGTTTCTGTCACAG", gene)
+            if(found == false) {
+                found = searchForExon(v, startToAdd, endToAdd, "GTCTATATGAGAAACCTTCTCTCTCAGCCCAGCCGGGCCCCACGGTTCAGGCAGGAGAGAACGTGACCTTGTCCTGTAGCTCCTGGAGCTCCTATGACATCTACCATCTGTCCAGGGAAGGGGAGGCCCATGAACGTAGGCTCCGTGCAGTGCCCAAGGTCAACAGAACATTCCAGGCAGACTTTCCTCTGGGCCCTGCCACCCACGGAGGGACCTACAGATGCTTCGGCTCTTTCCATGCCCTGCCCTGCGTGTGGTCAAACTCAAGTGACCCACTGCTTGTTTCTGTCACAG", gene)
+            }
+            if(debugging <= 2) {
+                err.println "correctAugustus: found exon 5 = ${found}"
+            }
+        } else if(gene.contains("3DL1L2")) {
+            // exon 5
+            found = searchForExon(v, startToAdd, endToAdd, "GTCCATATGAGAAACCTTCTCTCTCAGCCCAGCCGGGCCCCAAGGTTCAGGCAGGAGAGAGCGTGACCTTGTCCTGTAGCTCCCGGAGCTCCTATGACATGTACCATCTATCCAGGGAGGGGGGAGCCCATGAACGTAGGCTCCCTGCAGTGCGCAAGGTCAACAGAACATTCCAGGCAGATTTCCCTCTGGGCCCTGCCACCCACGGAGGGACCTACAGATGCTTCGGCTCTTTCCGTCACTCTCCCTACGAGTGGTCAGACCCGAGTGACCCACTGCTTGTTTCTGTCACAG", gene)
+            if(found == false) {
+                found = searchForExon(v, startToAdd, endToAdd, "GTCCATATGAGAAACCTTCTCTCTCAGCCCAGCCGGGCCCCAAGGTTCAGGCAGGAGAGAGCGTGACCTTGTCCTGTAGCTCCCGGAGCTCCTATGACATGTACCATCTATCCAGGGAGGGGGGAGCCCATGAACGTAGGCTCCCTGCAGTGCGCAAGGTCAACAGAACATTCCAGGCAGATTTCCCTCTGGGCCCTGCCACCCACGGAGGGACCTACAGATGCTTTGGCTCTTTCCGTCACTCTCCCTACGAGTTGTCAGACCCGAGTGACCCACTGCTTGTTTCTGTCACAG", gene)
+            }
+            if(debugging <= 2) {
+                err.println "correctAugustus: 3DL1L2 found exon 5 = ${found}"
+            }
+        }
+        err.println "correctAugustus: before checking exon 1"//todo
+        // exon 1 (34 bp)
+        found = searchForExon(v, startToAdd, endToAdd, "ATGTCGCTCATGGTCGTCAGCATGGCGTGTGTTG", gene)
+        err.println "correctAugustus: sequence contains 34 bp 11=${v.sequence.getSequenceAsString().contains("ATGTCGCTCATGGTCGTCAGCATGGCGTGTGTTG")}"//todo
+        if(found == false) {
+            found = searchForExon(v, startToAdd, endToAdd, "ATGTTGCTCATGGTCGTCAGCATGGCGTGTGTTG", gene)
+        }
+        err.println "correctAugustus: after checking exon 1"//todo
+        // need to add exons 6-9 for the 3dl1/3dl2 'fusion'
+        // exon 6 (51 bp)
+        found = searchForExon(v, startToAdd, endToAdd, "GAAACCCTTCAAGTAGTTGGCCTTCACCCACAGAACCAAGCTCCAAATCTG", gene)
+        if(debugging <= 2) {
+            err.println "correctAugustus: 3DL1L2 finding exon 6 (51 bp) = ${found}"
+        }
+        // exon 7
+        searchForExon(v, startToAdd, endToAdd, "GTATCTGCAGACACCTGCATGTTCTGATTGGGACCTCAGTGGTCATCTTCCTCTTCATCCTCCTCCTCTTCTTTCTCCTTTATCGCTGGTGCTCCAACAAAAAGA", gene)
+        // exon 8
+        searchForExon(v, startToAdd, endToAdd, "ATGCTGCTGTAATGGACCAAGAGCCTGCGGGGGACAGAACAGTGAATAGGCAG", gene)
+        // exon 9
+        searchForExon(v, startToAdd, endToAdd, "GACTCTGATGAACAAGACCCTCAGGAGGTGACGTACGCACAGTTGGATCACTGCGTTTTCATACAGAGAAAAATCAGTCGCCCTTCTCAGAGGCCCAAGACACCCCTAACAGATACCAGCGTGTACACGGAACTTCCAAATGCTGAGCCCAGATCCAAAGTTGTCTCCTGCCCACGAGCACCACAGTCAGGTCTTGAGGGGGTTTTCTAG", gene)
+    } else if(gene.contains("3DL2")) {
+        if(debugging <= 2) {
+            err.println "correctAugustus: adding exons to 3DL2 fusion"
+        }
+        // need to add exons 6-9 for the 3dl1/3dl2 'fusion'
+        // exon 6
+        searchForExon(v, startToAdd, endToAdd, "GAAACCCTTCAAGTAGTTGGCCTTCACCCACAGAACCAAGCTCCAAATCTG", gene)
+    } else if(gene.contains("3DL1S1")) {
+        if(debugging <= 2) {
+            err.println "correctAugustus: adding exons to 3DL1S1"
+        }
+        // need to add exons 7-9 
+        // exon 7 (105 bp)
+        searchForExon(v, startToAdd, endToAdd, "GTAACCTCAGACACCTGCACATTCTGATTGGGACCTCAGTGGTCAAAATCCCTTTCACCATCCTCCTCTTCTTTCTCCTTCATCGCTGGTGCTCCAACAAAAAAAA", gene)
+        // exon 8 (51 bp)
+        searchForExon(v, startToAdd, endToAdd, "ATGCTGCTGTAATGGACCAAGAGCCTGCAGGGAACAGAAGTGAACAGCGAG", gene)
+        // exon 9 (8 bp)
+        searchForExon(v, startToAdd, endToAdd, "GATTCTGA", gene)
+    } else if(gene.contains("2DL2")) {
+        if(debugging <= 2) {
+            err.println "correctAugustus: adding exons to 2DL2 (and L3S3S4S5)"
+        }
+        // need to add exons 8-9 
+        // exon 8 (53 bp)
+        searchForExon(v, startToAdd, endToAdd, "ATGCTGCGGTAATGGACCAAGAGTCTGCAGGGAACAGAACAGCGAATAGCGAG", gene)
+        // exon 9 (177 bp)
+        searchForExon(v, startToAdd, endToAdd, "GACTCTGATGAACAAGACCCTCAGGAGGTGACATACACACAGTTGAATCACTGCGTTTTCACACAGAGAAAAATCACTCGCCCTTCTCAGAGGCCCAAGACACCCCCAACAGATATCATCGTGTACGCGGAACTTCCAAATGCTGAGTCCAGATCCAAAGTTGTCTCCTGCCCATGA", gene)
+    } else if(gene.contains("2DL1S1S2")) {
+        if(debugging <= 2) {
+            err.println "correctAugustus: adding exons to 2DS2 (and S1S2)"
+        }
+        // need to add exons 5-9
+        // exon 295
+        searchForExon(v, startToAdd, endToAdd, "GTCTATATGAGAAACCTTCTCTCTCAGCCCAGCCGGGCCCCACGGTTTTGGCAGGAGAGAGCGTGACCTTGTCCTGCAGCTCCCGGAGCTCCTATGACATGTACCATCTATCCAGGGAGGGGGAGGCCCATGAACGTAGGTTCTCTGCAGGGCCCAAGGTCAACGGAACATTCCAGGCCGACTTTCCTCTGGGCCCTGCCACCCACGGAGGAACCTACAGATGCTTCGGCTCTTTCCGTGACTCTCCCTATGAGTGGTCAAACTCGAGTGACCCACTGCTTGTTTCTGTCACAG", gene)
+        // exon 6 51 bp
+        searchForExon(v, startToAdd, endToAdd, "GAAACCCTTCAAATAGTTGGCCTTCACCCACTGAACCAAGCTCCAAAACCG", gene)
+        // exon 7 105 bp
+        searchForExon(v, startToAdd, endToAdd, "GTAACCCCAGACACCTGCATGTTCTGATTGGGACCTCAGTGGTCAAAATCCCTTTCACCATCCTCCTCTTCTTTCTCCTTCATCGCTGGTGCTCCAACAAAAAAA", gene)
+        // exon 8 (53 bp)
+        searchForExon(v, startToAdd, endToAdd, "ATGCTGCTGTAATGGACCAAGAGCCTGCAGGGAACAGAACAGTGAACAGCGAG", gene)
+        // exon 9 (42 bp)
+        searchForExon(v, startToAdd, endToAdd, "GATTCTGATGAACAAGACCATCAGGAGGTGTCATACGCATAA", gene)
 
+    } else if(gene.contains("2DS4")) {
+        if(debugging <= 2) {
+            err.println "correctAugustus: adding exons to 2DS4"
+        }
+        // exon 1 34 bp
+        found = searchForExon(v, startToAdd, endToAdd, "ATGTCGCTCATGGTCATCATCATGGCGTGTGTTG", gene)
+        if(found == false) { // exon 1 14 bp
+            found = searchForExon(v, startToAdd, endToAdd, "CATGGCGTGTGTTG", gene)
+        }
+        // exon 5 294 bp
+        found = searchForExon(v, startToAdd, endToAdd, "GTCTATATGAGAAACCTTCTCTCTCAGCCCAGCCGGGCCCCACGGTTCAGGCAGGAGAGAATGTGACCTTGTCCTGCAGCTCCCGGAGCTCCTATGACATGTACCATCTATCCAGGGAAGGGGAGGCCCATGAACGTAGGCTCCCTGCAGTGCGCAGCATCAACGGAACATTCCAGGCCGACTTTCCTCTGGGCCCTGCCACCCACGGAGGGACCTACAGATGCTTCGGCTCTTTCCGTGACGCTCCCTACGAGTGGTCAAACTCGAGTGATCCACTGCTTGTTTCCGTCACAG", gene)
+        delFound = false
+        if(found == false) {
+            // this is the deleted form exon 5 272 bp
+            // todo have to hand delete the CDSs beyond this
+            delFound = searchForExon(v, startToAdd, endToAdd, "GTCTATATGAGAAACCTTCTCTCTCAGCCCAGCCGGGCCCCACGGTTCAGGCAGGAGAGAATGTGACCTTGTCCTGCAGCTCCATCTATCCAGGGAAGGGGAGGCCCATGAACGTAGGCTCCCTGCAGTGCGCAGCATCAACGGAACATTCCAGGCCGACTTTCCTCTGGGCCCTGCCACCCACGGAGGGACCTACAGATGCTTCGGCTCTTTCCGTGACGCTCCCTACGAGTGGTCAAACTCGAGTGATCCACTGCTTGTTTCCGTCACAG", gene)
+        }
+        err.println "correctAugustus: 2DS4 delFound=$delFound"//todo
+        if(delFound == true) {
+            v.end3p = endToAdd[endToAdd.lastIndexOf()]
+            if(debugging <= 4) {
+                err.println "correctAugustus: found 2DS4 del for ${v.id}"
+            }
+
+        } /*else { 
+*/
+            // exon 7 105 bp
+            found = searchForExon(v, startToAdd, endToAdd, "GTAACCCCAGACACCTACATGTTCTGATTGGGACCTCAGTGGTCAAAATCCCTTTCACCATCCTCCTCTTCTTTCTCCTTCATCGCTGGTGCTCCGACAAAAAAA", gene)
+            // exon 8 53 bp
+            found = searchForExon(v, startToAdd, endToAdd, "ATGCTGCTGTAATGGACCAAGAGCCTGCAGGGAACAGAACAGTGAACAGCGAG", gene)
+            // exon 9 42 bp
+            err.println "correctAugustus: startToAdd=${startToAdd}"//todo
+            found = searchForExon(v, startToAdd, endToAdd, "GATTCTGATGAACAAGACCATCAGGAGGTGTCATACGCATAA", gene)
+            err.println "correctAugustus: 2DS4 exon 9 found=${found}"//todo
+            err.println "correctAugustus: startToAdd=${startToAdd}"//todo
+            err.println "correctAugustus: endToAdd=${endToAdd}"//todo
+            if(found == false) {
+                // exon 9 19 bp
+                found = searchForExon(v, startToAdd, endToAdd, "GATTCTGATGAACAAGACC", gene)
+            }
+//        }
+    } else if(gene.contains("2DL4")) {
+        if(debugging <= 2) {
+            err.println "correctAugustus: adding exons to 2DL4"
+        }
+        // exon 7 105 bp
+        found = searchForExon(v, startToAdd, endToAdd, "GTATCGCCAGACACCTGCATGCTGTGATTAGGTACTCAGTGGCCATCATCCTCTTCACCATCCTTCCCTTCTTTCTCCTTCATCGCTGGTGCTCCAAAAAAAAAA", gene)
+        if(found == false) {
+            found = searchForExon(v, startToAdd, endToAdd, "GTATCGCCAGACACCTGCATGCTGTGATTAGGTACTCAGTGGCCATCATCCTCTTTACCATCCTTCCCTTCTTTCTCCTTCATCGCTGGTGCTCCAAAAAAAAA", gene)
+        }// locus
+        // exon 9 270 bp
+        found = searchForExon(v, startToAdd, endToAdd, "GACTCTGATGAACAAGACCCTCAGGAGGTGACATACGCACAGTTGGATCACTGCATTTTCACACAGAGAAAAATCACTGGCCCTTCTCAGAGGAGCAAGAGACCCTCAACAGATACCAGCGTGTGTATAGAACTTCCAAATGCTGAGCCCAGAGCGTTGTCTCCTGCCCATGAGCACCACAGTCAGGCCTTGATGGGATCTTCTAGGGAGACAACAGCCCTGTCTCAAACCCAGCTTGCCAGCTCTAATGTACCAGCAGCTGGAATCTGA", gene)
+        if(found == false) {
+            found = searchForExon(v, startToAdd, endToAdd, "GACTCTGATGAACAAGACCCTCAGGAGGTGACATACGCACAGTTGGATCACTGCATTTTCACACAGAGAAAAATCACTGGCCCTTCTCAGAGGAGCAAGAGACCCTCAACAGATACCAGCGTGTGTATAGAACTTCCAAATGCTGAGCCCAGAGCGTTATCTCCTGCCCATGAGCACCACAGTCAGGCCTTGATGGGATCTTCTAGGGAGACAACAGCCCTGTCTCAAACCCAGCTTGCCAGCTCTAATGTACCAGCAGCTGGAATCTGA", gene)
+        }// locus
+    }
+    if(debugging <= 2) { 
+        err.println "correctAugustus: startToRemove: " + startToRemove
+        err.println "correctAugustus: startToAdd: " + startToAdd
+        err.println "correctAugustus: endToRemove: " + endToRemove
+        err.println "correctAugustus: endToAdd: " + endToAdd
+    }
     // remove must come before adding; some may be in both lists
     v.exonStartTreeSet.removeAll(startToRemove)
     v.exonStartTreeSet.addAll(startToAdd)
@@ -1502,3 +1748,30 @@ def void correctAugustus(Expando v, Map<String, String> ipdNucMap, Map<String, S
     } // each ipd/imgt full sequence
 
 } // correctAugustus
+
+def boolean searchForExon(Expando v, ArrayList<Integer>startToAdd,
+                       ArrayList<Integer>endToAdd, String seq, String gene) {
+    found = false
+    exon = v.sequence.getSequenceAsString().toLowerCase().indexOf(seq.toLowerCase())
+    if(exon < 0) {
+        err.println "searchForExon: WARNING: couldn't find exon ${seq} in ${gene} for ${v.id}"
+        err.println "searchForExon: seq=${v.sequence.getSequenceAsString()}"
+    } else {
+        found = true
+        newEnd = exon + seq.length()
+        if(debugging <= 2) {
+            err.println "searchForExon: ${gene} found exon=${exon}-${newEnd} (${seq.length()} bp)"
+        }
+        if(!startToAdd.contains(exon+1)) { 
+            startToAdd.add(exon+1)
+        } else {
+            if(debugging <= 2) {
+                err.println "searchForExon: WARNING: already contains ${exon+1} "
+            }
+        }
+        if(!endToAdd.contains(newEnd)) { 
+            endToAdd.add(newEnd)
+        }
+    }
+  return found
+} // searchForExon
