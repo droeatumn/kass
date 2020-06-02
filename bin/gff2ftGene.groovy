@@ -50,10 +50,10 @@ import org.dishevelled.commandline.argument.*
 import groovy.transform.Field
 
 // things that may change per run
-debugging = 1 // TRACE=1, WARN=2, DEBUG=3, INFO=4, ERROR=5
+debugging = 3 // TRACE=1, WARN=2, DEBUG=3, INFO=4, ERROR=5
 @Field final String GENE_SYSTEM
 @Field final String GENE_NAME
-@Field final String KIR_NOMEN_VER = "IPD-KIR 3.9.0"
+@Field final String KIR_NOMEN_VER = "IPD-KIR 2.9.0"
 @Field final String HLA_NOMEN_VER = "IMGT/HLA 3.22.0"
 @Field String NOMEN_VER // tbd by input: KIR_NOMEN_VER or HLA_NOMEN_VER
 // for now, just all the possible sizes
@@ -108,7 +108,7 @@ featureMap.each { k, vList ->
         outputGenBankSource(gbWriter, v)
         correctAugustus(v, ipdNucMap, ipdGeneMap) // reannotate 2DP1 and 3DP1
         if(debugging <= 2) { 
-            err.println "after correctAugustus full match, gene now ${v.gene}, pcall now ${v.pcall}, ccall now ${v.ccall}, gcall now ${v.gcall}"
+            err.println "after correctAugustus, gene now ${v.gene}, pcall now ${v.pcall}, ccall now ${v.ccall}, gcall now ${v.gcall}"
         }
         outputGenBank(k, v, ipdNucMap, gbWriter)
     }
@@ -1041,8 +1041,17 @@ def void outputGenBank(String id, Expando query, Map<String,String> ipdNucMap,
 
         //todo end = query.exonEndMap[i] ? query.exonEndMap[i] : 0
         end = eiter.next()
-        if((i+1) == numExons) { // for last exon, include 3' UTR
-            end = query.end3p
+        if(((i+1) == numExons) &&
+           (((numExons == 8) || (numExons == 9)) && (gene.contains("DL") || gene.contains("DS"))) ||
+           ((numExons == 4) && gene.contains("3DP1"))) { // for last exon, include 3' UTR
+            if(query.end3p != null) {
+                end = query.end3p
+            } else {
+                if(debugging <= 5) {
+                    err.println "outputGenBank: ERROR: end3p is null"
+                    err.println "outputGenBank: ${query}"
+                }
+            }
         }
 
         length = end - start + 1
@@ -1076,6 +1085,8 @@ def void outputGenBank(String id, Expando query, Map<String,String> ipdNucMap,
         // output the exon regions containing the coding sequence
         if(debugging <= 2) {
             err.println "outputGenBank: start CDS"
+            err.println "outputGenBank: query=${query}"
+            err.println "outputGenBank: startIndex=${startIndex}"
         }
         outputLength = 0
         Iterator siter2 = query.exonStartTreeSet.iterator()
@@ -1089,6 +1100,9 @@ def void outputGenBank(String id, Expando query, Map<String,String> ipdNucMap,
             if(startIndex != 1) {
                 start += startIndex
                 end += startIndex
+            }
+            if(debugging <= 2) {
+                err.println "outputGenBank: ${i} start=${start}, end=${end}"
             }
             if(i == 0) {
                 gbOut.println "${start}\t${end}\tCDS"
@@ -1372,6 +1386,7 @@ def ArrayList<String> getcDNAMatches(DNASequence cSeq, Map<String, String> ipdNu
  * @param ipdNucMap Maps of description -> sequence for '_nuc.fasta' file from IPD-KIR
  * @todo: expand to full sequence
  * @todo: rename: not just for pseudo
+ * @todo: needs to be coordinated with augustus2NCBI.groovy
  */ 
 def void correctAugustus(Expando v, Map<String, String> ipdNucMap, Map<String, String> ipdGeneMap) {
     gene = v.gene
@@ -1412,7 +1427,7 @@ def void correctAugustus(Expando v, Map<String, String> ipdNucMap, Map<String, S
                 err.println "correctAugustus: exon ${i}, removing start=${start}, end=${end}, length=${length}"
             }
         }*/
-        if((i+1) == numExons) { // for last exon, include 3' UTR
+        if(((i+1) == numExons) && (i > 7)) { // for last exon, include 3' UTR
             // augustus has the correct end, but not start of last exon for 2DP1
             // augustus has the correct start, but not end of last exon for 3DP1
             if(v.gene.contains("2DP1")) {
@@ -1434,10 +1449,17 @@ def void correctAugustus(Expando v, Map<String, String> ipdNucMap, Map<String, S
                 //todo(keep?)newEnd = newStart + 177 - 1
             } else if(v.gene.contains("3DP1")) { 
                 newEnd = start + 294 - 1
+            } else if(v.gene.contains("3DL2")) {
+                if((newEnd - newStart + 1) == 329) {
+                    newEnd = newStart + 294 - 1
+                    if(debugging <= 4) { 
+                        err.println "correctAugustus: 3DL2 new end=${newEnd}"
+                    }
+                }
             }
             if(debugging <= 2) {
-                err.println "correctAugustus: removing ${start}, ${end}"
-                err.println "correctAugustus: adding ${newStart}, ${newEnd}"
+                err.println "correctAugustus: last exon removing ${start}, ${end}"
+                err.println "correctAugustus: last exon adding ${newStart}, ${newEnd}"
             }
             if(start != newStart) { 
                 startToRemove.add(start)
@@ -1452,8 +1474,6 @@ def void correctAugustus(Expando v, Map<String, String> ipdNucMap, Map<String, S
             if((newEnd - newStart + 1) == 13) {
                 newStart = newEnd - 33
             }
-            startToRemove.add(start)
-            startToAdd.add(newStart)
 /*        } else if(v.gene.contains("S4")) {
             if(length == 272) {
                 newEnd = start + 294 - 1
@@ -1463,18 +1483,33 @@ def void correctAugustus(Expando v, Map<String, String> ipdNucMap, Map<String, S
                     err.println "correctAugustus: new 2DS4 exon 5(4): ${newExon}"
                 }
             }
+*/
+            if(start != newStart) { 
+                startToRemove.add(start)
+                startToAdd.add(newStart)
+            }
             if(end != newEnd) { 
                 endToRemove.add(end)
                 endToAdd.add(newEnd)
             }
-*/
         } else if(!KIR_EXON_SIZES.contains(length)) {
             if(debugging <= 4) { 
                 err.println "correctAugustus WARNING: skipping exon ${i} length ${length} (${end}-${start}) for ${v.gene}, ${v.id}"
             }
-            startToRemove.add(start)
-            endToRemove.add(end)
-            continue
+            if(v.gene.contains("3DL1L2") || v.gene.contains("3DL2")) {
+                if((newEnd - newStart + 1) == 329) {
+                    newEnd = newStart + 294 - 1
+                    if(debugging <= 4) { 
+                        err.println "correctAugustus: now 3DL2 len=${newEnd}"
+                    }
+                    endToRemove.add(end)
+                    endToAdd.add(newEnd)
+                }
+            } else { 
+                startToRemove.add(start)
+                endToRemove.add(end)
+                continue
+            }
         }
     } // each exon
     // also, add exon 8 for 2DP1
@@ -1496,28 +1531,114 @@ def void correctAugustus(Expando v, Map<String, String> ipdNucMap, Map<String, S
             }
             startToAdd.add(start8)
             endToAdd.add(end8)
+        } // done adding exon 8 to 2DP1
+    } else if(gene.contains("3DL1L2") || gene.contains("3DL2")) {
+        if(debugging <= 2) {
+            err.println "correctAugustus: in 3DL1L2"
         }
-    } // done adding exon 8
+        // need to add exons 6-9 for the 3dl1/3dl2 'fusion'
+        // exon 6
+/*        seq = "GAAACCCTTCAAGTAGTTGGCCTTCACCCACAGAACCAAGCTCCAAATCTG"// exon 6 (51bp)
+        exon = v.sequence.getSequenceAsString().indexOf(seq)
+        if(exon < 0) {
+            err.println "correctAugustus: WARNING: couldn't find exon ${seq.length()} in 3DL1L2 for ${v.id}"
+        } else { 
+            newEnd = exon + seq.length()
+            if(debugging <= 2) {
+                err.println "correctAugustus: 3DL1L2 exon=${exon}-${newEnd}"
+            }
+            startToAdd.add(exon+1)
+            endToAdd.add(newEnd)
+        }
+*/
+        // exon 7
+        seq = "GTATCTGCAGACACCTGCATGTTCTGATTGGGACCTCAGTGGTCATCTTCCTCTTCATCCTCCTCCTCTTCTTTCTCCTTTATCGCTGGTGCTCCAACAAAAAGA"// exon 7 (105 bp)
+        exon = v.sequence.getSequenceAsString().indexOf(seq)
+        if(exon < 0) {
+            err.println "correctAugustus: WARNING: couldn't find exon ${seq.length()} in 3DL1L2 for ${v.id}"
+        } else { 
+            newEnd = exon + seq.length()
+            if(debugging <= 2) {
+                err.println "correctAugustus: 3DL1L2 exon=${exon}-${newEnd}"
+            }
+            startToAdd.add(exon+1)
+            endToAdd.add(newEnd)
+        }
 
+        // exon 8
+        seq = "ATGCTGCTGTAATGGACCAAGAGCCTGCGGGGGACAGAACAGTGAATAGGCAG"// exon 8 (53 bp)
+        exon = v.sequence.getSequenceAsString().indexOf(seq)
+        if(exon < 0) {
+            err.println "correctAugustus: WARNING: couldn't find exon ${seq.length()} in 3DL1L2 for ${v.id}"
+        } else { 
+            newEnd = exon + seq.length()
+            if(debugging <= 2) {
+                err.println "correctAugustus: 3DL1L2 exon=${exon}-${newEnd}"
+            }
+            startToAdd.add(exon+1)
+            endToAdd.add(newEnd)
+        }
+
+        // exon 9
+        seq = "GACTCTGATGAACAAGACCCTCAGGAGGTGACGTACGCACAGTTGGATCACTGCGTTTTCATACAGAGAAAAATCAGTCGCCCTTCTCAGAGGCCCAAGACACCCCTAACAGATACCAGCGTGTACACGGAACTTCCAAATGCTGAGCCCAGATCCAAAGTTGTCTCCTGCCCACGAGCACCACAGTCAGGTCTTGAGGGGGTTTTCTAG"// exon 9 (210 bp)
+        exon = v.sequence.getSequenceAsString().indexOf(seq)
+        if(exon < 0) {
+            err.println "correctAugustus: WARNING: couldn't find exon ${seq.length()} in 3DL1L2 for ${v.id}"
+        } else { 
+            newEnd = exon + seq.length()
+            if(debugging <= 2) {
+                err.println "correctAugustus: 3DL1L2 exon=${exon}-${newEnd}"
+            }
+            startToAdd.add(exon+1)
+            endToAdd.add(newEnd)
+        }
+    }
+
+    if(debugging <= 2) {
+        err.println "correctAugustus: starttoRemove=${startToRemove}"
+        err.println "correctAugustus: starttoAdd=${startToAdd}"
+        err.println "correctAugustus: endtoRemove=${endToRemove}"
+        err.println "correctAugustus: endtoAdd=${endToAdd}"
+    }
     // remove must come before adding; some may be in both lists
     v.exonStartTreeSet.removeAll(startToRemove)
     v.exonStartTreeSet.addAll(startToAdd)
     v.exonEndTreeSet.removeAll(endToRemove)
     v.exonEndTreeSet.addAll(endToAdd)
 
+    if(debugging <= 2) {
+        err.println "correctAugustus: exonStartTreeSet=${v.exonStartTreeSet}"
+        err.println "correctAugustus: exonEndTreeSet=${v.exonEndTreeSet}"
+    }
+
     // generate the cDNA sequence from the new exons
     Iterator siter3 = v.exonStartTreeSet.iterator()
     Iterator eiter3 = v.exonEndTreeSet.iterator()
     //err.println v.exonStartTreeSet //todo
     //err.println v.exonEndTreeSet //todo
+    if(debugging <= 2) {
+        err.println "correctAugustus: seq length=${v.sequence.getSequenceAsString().length()}"
+    }
     for(i=0; siter3.hasNext(); i++) { 
         Integer start = siter3.next()
         Integer end = eiter3.next()
+        Integer seqLen = v.sequence.getSequenceAsString().length()
+        if(start > seqLen-1) {
+            continue
+        }
         l3 = end - start + 1
         if(debugging <= 2) {
-            err.println "correctAugustus: exon ${i} ${start}\t${end}\t${l3} bp"
+            err.println "correctAugustus: exon ${i} ${start}\t${end}\t${l3} bp, seq length=${v.sequence.getSequenceAsString().length()}"
         }
-        cDNANew += v.sequence.getSequenceAsString()[start-1..end-1]
+        endIdx = end-1
+        err.println "endIdx1 = ${endIdx}"//todo
+        if(endIdx > v.sequence.getSequenceAsString().length()-1) {
+            endIdx = v.sequence.getSequenceAsString().length()-1
+            err.println "endIdx2 = ${endIdx}"//todo
+        }
+        err.println "endIdx3 = ${endIdx}"//todo
+        err.println "start = ${start}"//todo
+        cDNANew += v.sequence.getSequenceAsString()[start-1..endIdx]
     } // each exon
     
     // annotate the sequence wrt IPD-KIR
