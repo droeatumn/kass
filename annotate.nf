@@ -107,6 +107,10 @@ process structure {
     # annotate the markup with the genes
     ./${annotateFile} -i ${featuresFile} -f ${r} -m ${bamName}_markup.txt -o . 2> ${bamName}_annotation_err.txt
     echo "done"
+    # todo: do this only in case of the fusion
+#    mv ${s}_3DL2_features.fasta ${s}_3DL1L2_features.fasta # todo needed for fusion
+    deep.pl replace '2DL4~3DL2' '2DL4~3DL1L2' '*features.fasta'
+    deep.pl replace '2DL4~3DL2' '2DL4~3DL1S1' '*_annotation.txt'
     cut -f2 ${bamName}_annotation.txt | sort | uniq -c > ${bamName}_annotation_strings.txt
 
     """
@@ -239,6 +243,13 @@ process alleles {
     # aa and codingseq
     /root/augustus/scripts/getAnnoFastaFromJoingenes.py -g ${r} -3 ${g} -o ${s}_${locus}_augustus 2> ${s}_${locus}_getAnnoFastaFromJoingenes_err.txt
     gff2ftGene.groovy -g ${fullLocus} -i ${refAlleleDir} -f ${g} -s ${r} -l ${s}_${fullLocus}.gl.txt 2> ${s}_${locus}.alleles_err.txt
+    # MN167529_2DS4 doesn't work because of the augustus g2 (todo)
+    # just gonna go without g2 for now
+#    if [ -f ${s}_2DS4_augustus.gff ]; then
+#    if [ -f ${s}_3DL1L2_augustus.gff ]; then
+#        cat ${s}_${locus}_augustus.gff | grep -v g2 > tmp.gff
+#        mv tmp.gff ${s}_${locus}_augustus.gff
+#    fi
     augustus2NCBI.groovy -g ${fullLocus} -i ${refAlleleDir} -f ${s}_${locus}_augustus.gff -s ${r} -l ${s}_${fullLocus}.gl.txt 2> ${s}_${locus}_aug2NCBI_err.txt
     """
 } // alleles
