@@ -451,7 +451,7 @@ ArrayList extractDNA(String desc, String previousGeneNomen, String nomenStr,
 //    } else if((geneNomen == "2DL2L3S3S4S5")) {
         // 2DS4 needs more padding on both ends
         dnaIndex -= 2000 // MN167521 2DS4 and MN167525 2DL2
-//        dnaEndIndex += 1500 // sometimes shouldn't be used
+        dnaEndIndex += 1500 // sometimes shouldn't be used; sometimes should (MN16752521)
     }
 	if(debugging <= 2) {
 		err.println "extractDNA: dnaIndex=${dnaIndex}"
