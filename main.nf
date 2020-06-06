@@ -26,6 +26,7 @@ params.threads = "8"
 
 // things that probably won"t change per run
 fqPath = raw + "/*" + fqNameSuffix
+capFile = file("${home}/input/cap.fasta") // capture probes
 markerCapFile = file("${home}/input/markers_wCap.fasta") // gene markers + capture probes
 featuresFile = file("${home}/input/features.txt") // markup features
 haps = home + "${home}/input/HapSet23_v1.txt"
@@ -142,7 +143,10 @@ process assemble {
         cp \$id/\$id.contigs.fasta . || true
         deep.pl replace '>tig' ">\${id}_tig" "\${id}.contigs.fasta"
     done
-    cat *.contigs.fasta | gzip > \$firstID.contigs.fasta.gz
+    cat *.contigs.fasta > tmp.fasta
+    orient.groovy -i tmp.fasta -p ${capFile} -o tmp2.fasta
+    reformat.sh in=tmp2.fasta out=\$firstID.contigs.fasta fastawrap=1000000 overwrite=true
+    gzip \$firstID.contigs.fasta
     """
 } // assemble
 
