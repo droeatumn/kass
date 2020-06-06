@@ -42,6 +42,37 @@ annotateReads = Channel.create()
 readTap = reads.tap(annotateReads).filter{ it[1] != params.sbt }
 
 /* 
+ * Use the capture probes to orient the input sequences.
+ */
+process orient {
+    if(params.nocontainer == "null") { 
+        container = params.container
+    }
+    publishDir params.output, mode: 'copy', overwrite: true
+    errorStrategy 'ignore'
+    tag { s }
+
+  input:
+    set s, file(r) from readTap
+    path(markerFile)
+  output:
+    tuple s, path{"${s}*_orient.fasta"} into orientedFasta
+  script:
+    def rootName = r.name.replaceFirst(".gz", "")
+    def gzFlag = ""  // tell bowtie it is a fasta or fastq
+    if(r.name.endsWith(".gz")) {
+        gzFlag = "1"
+    }
+    """
+    if [ "$gzFlag" == "1" ]; then
+        gunzip -f ${r}
+    fi
+    orient.groovy -i ${rootName} -p ${markerFile} -o tmp.fasta
+    reformat.sh in=tmp.fasta out=${s}_orient.fasta fastawrap=1000000 overwrite=true
+    """
+} // orient
+
+/* 
  * Use the capture probes to annotate.
  * Output is *_annotation.txt
  */
@@ -54,7 +85,7 @@ process structure {
     tag { s }
 
   input:
-    set s, file(r) from readTap
+    set s, file(r) from orientedFasta
     path(markerFile)
     path(alignProbesFile)
     path(annotateFile)
