@@ -47,6 +47,17 @@ RUN cd /opt  && mkdir -p /opt/bin \
 
 RUN pip3 install --upgrade NanoPlot
 
+# stringsearchalgorithms
+RUN cd /opt \
+  && wget https://github.com/almondtools/stringsearchalgorithms/archive/stringsearchalgorithms-0.4.3.tar.gz \
+  && gunzip stringsearchalgorithms-0.4.3.tar.gz \
+  && tar -xvf stringsearchalgorithms-0.4.3.tar \
+  && rm stringsearchalgorithms-0.4.3.tar \
+  && cd stringsearchalgorithms-stringsearchalgorithms-0.4.3 \
+  && mvn compile \
+  && mvn package \
+  && mv target/stringsearchalgorithms-0.4.3.jar /opt/kass/bin/jars/
+
 # google guava
 RUN cd /opt \
   && git clone https://github.com/google/guava.git \
@@ -61,7 +72,7 @@ ADD *.nf /opt/kass/
 ADD input /opt/kass/input/
 ADD bin /opt/kass/bin/
 ADD src /opt/kass/src/
-ENV CLASSPATH /opt/kass/bin/jars/slf4j-api-1.7.5.jar:/opt/kass/bin/jars/biojava4-core.jar:/opt/kass/bin/jars/dsh-commandline-1.1.jar:/opt/kass/bin/jars/super-csv.jar:$CLASSPATH
+ENV CLASSPATH /opt/kass/bin/jars/slf4j-api-1.7.5.jar:/opt/kass/bin/jars/biojava4-core.jar:/opt/kass/bin/jars/dsh-commandline-1.1.jar:/opt/kass/bin/jars/super-csv.jar:/opt/kass/bin/jars/stringsearchalgorithms-0.4.3.jar:$CLASSPATH
 ENV CLASSPATH /opt/guava/guava/target/guava-HEAD-jre-SNAPSHOT.jar:/opt/jars/commons-math3-3.6.1/commons-math3-3.6.1.jar:$CLASSPATH
 ENV CLASSPATH /opt/jars/guava-21.0.jar:$CLASSPATH
 
