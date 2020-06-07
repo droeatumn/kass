@@ -1717,16 +1717,29 @@ def void correctAugustus(Expando v, Map<String, String> ipdNucMap, Map<String, S
             err.println "correctAugustus: after cDNA match, gene now ${v.gene}, pcall now ${v.pcall}, ccall now ${v.ccall}"
         }
     }
-    if(debugging <= 2) {
-        err.println "correctAugustus: before checking full gene, v=${v}"
-    }
     if(v.end3p == null) { // todo: why is this null here? KP420446 3DP1
-        v.end3p = v.sequence.getLength()-1
+        v.end3p = v.sequence.getLength()
+    }
+    if(debugging <= 2) {
+        err.println "correctAugustus: before checking full gene, v len=${v.sequence.getLength()}"
+        err.println "correctAugustus: before checking full gene, v startSeq=${v.startSeq}"
+        err.println "correctAugustus: before checking full gene, v endSeq=${v.endSeq}"
+        err.println "correctAugustus: before checking full gene, v start5p=${v.start5p}"
+        err.println "correctAugustus: before checking full gene, v end3p=${v.end5p}"
     }
     // annotate wrt full gene
     ipdGeneMap.each { header, seq ->
         // full sequence match *
-        geneSeq = new DNASequence(v.sequence.getSequenceAsString()[v.start5p-1 .. v.end3p-1], AmbiguityDNACompoundSet.getDNACompoundSet())
+        s = v.start5p - 1
+        if(0 > v.startSp) {
+            s = 0
+        }
+        e = v.end3p - 1
+        if(v.sequence.getLength() < v.start3p) {
+            e = v.sequence.getLength() - 1
+        }
+        
+        geneSeq = new DNASequence(v.sequence.getSequenceAsString()[s .. e], AmbiguityDNACompoundSet.getDNACompoundSet())
         if(sequenceContains(seq, geneSeq)) {
             (ipdGeneNew, gcall) = interpFullGene(header)
             v.gene = ipdGeneNew
