@@ -40,23 +40,23 @@ RUN cd /opt  && mkdir -p /opt/bin \
   && unzip qualimap_v2.2.1.zip && rm qualimap_v2.2.1.zip \
   && cd /opt && wget http://www.bioinformatics.babraham.ac.uk/projects/fastqc/fastqc_v0.11.9.zip \
   && unzip fastqc_v0.11.9.zip && rm fastqc_v0.11.9.zip \
-  && chmod 750 /opt/FastQC/fastqc \
-  && wget https://sourceforge.net/projects/quast/files/quast-5.0.2.tar.gz \
-  && tar -zxvf quast-5.0.2.tar.gz && cd quast-5.0.2 && ./setup.py install && cd .. \
-  && rm quast-5.0.2.tar.gz
+  && chmod 750 /opt/FastQC/fastqc 
+#  && wget https://sourceforge.net/projects/quast/files/quast-5.0.2.tar.gz \
+#  && tar -zxvf quast-5.0.2.tar.gz && cd quast-5.0.2 && ./setup.py install && cd .. \
+#  && rm quast-5.0.2.tar.gz
 
 RUN pip3 install --upgrade NanoPlot
 
 # stringsearchalgorithms
-RUN cd /opt \
-  && wget https://github.com/almondtools/stringsearchalgorithms/archive/stringsearchalgorithms-0.4.3.tar.gz \
-  && gunzip stringsearchalgorithms-0.4.3.tar.gz \
-  && tar -xvf stringsearchalgorithms-0.4.3.tar \
-  && rm stringsearchalgorithms-0.4.3.tar \
-  && cd stringsearchalgorithms-stringsearchalgorithms-0.4.3 \
-  && mvn compile \
-  && mvn package \
-  && mv target/stringsearchalgorithms-0.4.3.jar /opt/kass/bin/jars/
+#RUN cd /opt \
+#  && wget https://github.com/almondtools/stringsearchalgorithms/archive/stringsearchalgorithms-0.4.3.tar.gz \
+#  && gunzip stringsearchalgorithms-0.4.3.tar.gz \
+#  && tar -xvf stringsearchalgorithms-0.4.3.tar \
+#  && rm stringsearchalgorithms-0.4.3.tar \
+#  && cd stringsearchalgorithms-stringsearchalgorithms-0.4.3 \
+#  && mvn compile \
+#  && mvn package \
+#  && mv target/stringsearchalgorithms-0.4.3.jar /opt/kass/bin/jars/
 
 # google guava
 RUN cd /opt \
@@ -80,6 +80,7 @@ ENV CLASSPATH /opt/jars/guava-21.0.jar:$CLASSPATH
 ENV PATH /opt/bin:$PATH
 #ENV PATH /opt/lorma-bin_0.5_linux64:$PATH
 ENV PATH /opt/kass/bin/lorma-bin_0.5_linux64:$PATH
+ENV PATH /opt/kass/bin/quast-5.0.2:$PATH
 ENV PATH /opt/lordec-bin_0.9_linux64:$PATH
 ENV PATH /opt/bowtie2-2.3.5.1-linux-x86_64:$PATH
 ENV PATH /opt/qualimap_v2.2.1:$PATH
