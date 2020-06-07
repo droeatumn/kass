@@ -1,0 +1,29 @@
+make: Entering directory '/opt/quast-5.0.2/quast_libs/minimap2'
+cc -c -g -Wall -O2 -Wc++-compat  -DHAVE_KALLOC  main.c -o main.o
+cc -c -g -Wall -O2 -Wc++-compat  -DHAVE_KALLOC  getopt.c -o getopt.o
+cc -c -g -Wall -O2 -Wc++-compat  -DHAVE_KALLOC  kthread.c -o kthread.o
+cc -c -g -Wall -O2 -Wc++-compat  -DHAVE_KALLOC  kalloc.c -o kalloc.o
+cc -c -g -Wall -O2 -Wc++-compat  -DHAVE_KALLOC  misc.c -o misc.o
+cc -c -g -Wall -O2 -Wc++-compat  -DHAVE_KALLOC  bseq.c -o bseq.o
+cc -c -g -Wall -O2 -Wc++-compat  -DHAVE_KALLOC  sketch.c -o sketch.o
+cc -c -g -Wall -O2 -Wc++-compat  -DHAVE_KALLOC  sdust.c -o sdust.o
+cc -c -g -Wall -O2 -Wc++-compat  -DHAVE_KALLOC  options.c -o options.o
+cc -c -g -Wall -O2 -Wc++-compat  -DHAVE_KALLOC  index.c -o index.o
+cc -c -g -Wall -O2 -Wc++-compat  -DHAVE_KALLOC  chain.c -o chain.o
+cc -c -g -Wall -O2 -Wc++-compat  -DHAVE_KALLOC  align.c -o align.o
+cc -c -g -Wall -O2 -Wc++-compat  -DHAVE_KALLOC  hit.c -o hit.o
+cc -c -g -Wall -O2 -Wc++-compat  -DHAVE_KALLOC  map.c -o map.o
+cc -c -g -Wall -O2 -Wc++-compat  -DHAVE_KALLOC  format.c -o format.o
+cc -c -g -Wall -O2 -Wc++-compat  -DHAVE_KALLOC  pe.c -o pe.o
+cc -c -g -Wall -O2 -Wc++-compat  -DHAVE_KALLOC  esterr.c -o esterr.o
+cc -c -g -Wall -O2 -Wc++-compat  -msse2 -DHAVE_KALLOC  ksw2_ll_sse.c -o ksw2_ll_sse.o
+cc -c -g -Wall -O2 -Wc++-compat  -msse4.1 -DHAVE_KALLOC -DKSW_CPU_DISPATCH  ksw2_extz2_sse.c -o ksw2_extz2_sse41.o
+cc -c -g -Wall -O2 -Wc++-compat  -msse4.1 -DHAVE_KALLOC -DKSW_CPU_DISPATCH  ksw2_extd2_sse.c -o ksw2_extd2_sse41.o
+cc -c -g -Wall -O2 -Wc++-compat  -msse4.1 -DHAVE_KALLOC -DKSW_CPU_DISPATCH  ksw2_exts2_sse.c -o ksw2_exts2_sse41.o
+cc -c -g -Wall -O2 -Wc++-compat  -msse2 -mno-sse4.1 -DHAVE_KALLOC -DKSW_CPU_DISPATCH -DKSW_SSE2_ONLY  ksw2_extz2_sse.c -o ksw2_extz2_sse2.o
+cc -c -g -Wall -O2 -Wc++-compat  -msse2 -mno-sse4.1 -DHAVE_KALLOC -DKSW_CPU_DISPATCH -DKSW_SSE2_ONLY  ksw2_extd2_sse.c -o ksw2_extd2_sse2.o
+cc -c -g -Wall -O2 -Wc++-compat  -msse2 -mno-sse4.1 -DHAVE_KALLOC -DKSW_CPU_DISPATCH -DKSW_SSE2_ONLY  ksw2_exts2_sse.c -o ksw2_exts2_sse2.o
+cc -c -g -Wall -O2 -Wc++-compat  -msse4.1 -DHAVE_KALLOC -DKSW_CPU_DISPATCH  ksw2_dispatch.c -o ksw2_dispatch.o
+ar -csru libminimap2.a kthread.o kalloc.o misc.o bseq.o sketch.o sdust.o options.o index.o chain.o align.o hit.o map.o format.o pe.o esterr.o ksw2_ll_sse.o ksw2_extz2_sse41.o ksw2_extd2_sse41.o ksw2_exts2_sse41.o ksw2_extz2_sse2.o ksw2_extd2_sse2.o ksw2_exts2_sse2.o ksw2_dispatch.o
+cc -g -Wall -O2 -Wc++-compat  main.o getopt.o -o minimap2 -L. -lminimap2 -lm -lz -lpthread
+make: Leaving directory '/opt/quast-5.0.2/quast_libs/minimap2'

@@ -1,0 +1,148 @@
+FileRecordTypeChecker.cpp: In member function 'bool FileRecordTypeChecker::isTextDelimtedFormat(const char*, size_t)':
+FileRecordTypeChecker.cpp:365:19: warning: comparison between signed and unsigned integer expressions [-Wsign-compare]
+   for (int j=0; j < len; j++) {
+                 ~~^~~~~
+src/api/internal/index/BamStandardIndex_p.cpp: In member function 'void BamTools::Internal::BamStandardIndex::WriteLinearOffsets(const int&, BamTools::Internal::BaiLinearOffsetVector&)':
+src/api/internal/index/BamStandardIndex_p.cpp:958:26: warning: comparison between signed and unsigned integer expressions [-Wsign-compare]
+     if ( numBytesWritten != (sizeof(offsetCount) + linearOffsets.size()*sizeof(uint64_t)) )
+          ~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+src/api/internal/io/BamHttp_p.cpp: In member function 'bool BamTools::Internal::BamHttp::SendRequest(size_t)':
+src/api/internal/io/BamHttp_p.cpp:396:63: warning: comparison between signed and unsigned integer expressions [-Wsign-compare]
+     return ( WriteToSocket(requestHeader.c_str(), headerSize) == headerSize );
+              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~
+src/api/internal/io/HostAddress_p.cpp: In member function 'std::__cxx11::string BamTools::Internal::HostAddress::GetIPString() const':
+src/api/internal/io/HostAddress_p.cpp:325:13: warning: this 'if' clause does not guard... [-Wmisleading-indentation]
+             if ( i != 0 )
+             ^~
+src/api/internal/io/HostAddress_p.cpp:327:17: note: ...this statement, but the latter is misleadingly indented as if it were guarded by the 'if'
+                 ss << hex << ( (uint16_t(m_ip6Address[2*i]) << 8) |
+                 ^~
+Fasta.cpp: In member function 'std::__cxx11::string FastaReference::getSequence(std::__cxx11::string)':
+Fasta.cpp:290:14: warning: ignoring return value of 'size_t fread(void*, size_t, size_t, FILE*)', declared with attribute warn_unused_result [-Wunused-result]
+         fread(seq, sizeof(char), seqlen, file);
+         ~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Fasta.cpp: In member function 'std::__cxx11::string FastaReference::getSubSequence(std::__cxx11::string, int, int)':
+Fasta.cpp:332:14: warning: ignoring return value of 'size_t fread(void*, size_t, size_t, FILE*)', declared with attribute warn_unused_result [-Wunused-result]
+         fread(seq, sizeof(char), (off_t) seqlen, file);
+         ~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+GenomeFile.cpp: In member function 'void GenomeFile::loadGenomeFileIntoMap()':
+GenomeFile.cpp:60:26: warning: variable 'c2' set but not used [-Wunused-but-set-variable]
+                     long c2;
+                          ^~
+annotateMain.cpp: In function 'int annotate_main(int, char**)':
+annotateMain.cpp:39:10: warning: variable 'haveTitles' set but not used [-Wunused-but-set-variable]
+     bool haveTitles     = false;
+          ^~~~~~~~~~
+bamToBed.cpp: In function 'int bamtobed_main(int, char**)':
+bamToBed.cpp:88:10: warning: variable 'useAlignmentScore' set but not used [-Wunused-but-set-variable]
+     bool useAlignmentScore = false;
+          ^~~~~~~~~~~~~~~~~
+bamToFastqMain.cpp: In function 'int bamtofastq_main(int, char**)':
+bamToFastqMain.cpp:38:10: warning: variable 'haveFastq2' set but not used [-Wunused-but-set-variable]
+     bool haveFastq2    = false;
+          ^~~~~~~~~~
+bedToBam.cpp: In function 'int bedtobam_main(int, char**)':
+bedToBam.cpp:60:10: warning: variable 'haveMapQual' set but not used [-Wunused-but-set-variable]
+     bool haveMapQual     = false;
+          ^~~~~~~~~~~
+bedpeToBam.cpp: In function 'int bedpetobam_main(int, char**)':
+bedpeToBam.cpp:61:10: warning: variable 'haveMapQual' set but not used [-Wunused-but-set-variable]
+     bool haveMapQual     = false;
+          ^~~~~~~~~~~
+clusterMain.cpp: In function 'int cluster_main(int, char**)':
+clusterMain.cpp:38:10: warning: variable 'haveMaxDistance' set but not used [-Wunused-but-set-variable]
+     bool haveMaxDistance = false;
+          ^~~~~~~~~~~~~~~
+coverageFile.cpp: In member function 'virtual void CoverageFile::giveFinalReport(RecordOutputMgr*)':
+coverageFile.cpp:100:11: warning: ignoring return value of 'int asprintf(char**, const char*, ...)', declared with attribute warn_unused_result [-Wunused-result]
+   asprintf(&depthPctString, "%0.7f", depthPct);
+   ~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+coverageFile.cpp: In member function 'void CoverageFile::doMean(RecordOutputMgr*, RecordKeyVector&)':
+coverageFile.cpp:181:10: warning: ignoring return value of 'int asprintf(char**, const char*, ...)', declared with attribute warn_unused_result [-Wunused-result]
+  asprintf(&meanString, "%0.7f", mean);
+  ~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~
+coverageFile.cpp: In member function 'void CoverageFile::doHist(RecordOutputMgr*, RecordKeyVector&)':
+coverageFile.cpp:210:11: warning: ignoring return value of 'int asprintf(char**, const char*, ...)', declared with attribute warn_unused_result [-Wunused-result]
+   asprintf(&coveredFractionString, "%0.7f", coveredFraction);
+   ~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+coverageFile.cpp: In member function 'void CoverageFile::doDefault(RecordOutputMgr*, RecordKeyVector&)':
+coverageFile.cpp:230:10: warning: ignoring return value of 'int asprintf(char**, const char*, ...)', declared with attribute warn_unused_result [-Wunused-result]
+  asprintf(&coveredFractionString, "%0.7f", coveredFraction);
+  ~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+genomeCoverageBed.cpp: In member function 'void BedGenomeCoverage::CoverageBam(std::__cxx11::string)':
+genomeCoverageBed.cpp:322:23: warning: comparison between signed and unsigned integer expressions [-Wsign-compare]
+                 if(end<_fragmentSize) { //sometimes fragmentSize is bigger :(
+                    ~~~^~~~~~~~~~~~~~
+getOverlap.cpp: In function 'int getoverlap_main(int, char**)':
+getOverlap.cpp:44:10: warning: variable 'haveColumns' set but not used [-Wunused-but-set-variable]
+     bool haveColumns = false;
+          ^~~~~~~~~~~
+intersectFile.cpp: In member function 'virtual void IntersectFile::processHits(RecordOutputMgr*, RecordKeyVector&)':
+intersectFile.cpp:70:33: warning: variable 'hitListIter' set but not used [-Wunused-but-set-variable]
+  RecordKeyVector::iterator_type hitListIter = hits.begin();
+                                 ^~~~~~~~~~~
+multiBamCovMain.cpp: In function 'int multibamcov_main(int, char**)':
+multiBamCovMain.cpp:38:10: warning: variable 'haveBed' set but not used [-Wunused-but-set-variable]
+     bool haveBed           = false;
+          ^~~~~~~
+multiBamCovMain.cpp:39:10: warning: variable 'haveBams' set but not used [-Wunused-but-set-variable]
+     bool haveBams          = false;
+          ^~~~~~~~
+multiBamCovMain.cpp:47:10: warning: variable 'haveFraction' set but not used [-Wunused-but-set-variable]
+     bool haveFraction       = false;
+          ^~~~~~~~~~~~
+multiIntersectBedMain.cpp: In function 'int multiintersect_main(int, char**)':
+multiIntersectBedMain.cpp:45:10: warning: variable 'haveFiles' set but not used [-Wunused-but-set-variable]
+     bool haveFiles         = false;
+          ^~~~~~~~~
+multiIntersectBedMain.cpp:47:10: warning: variable 'haveGenome' set but not used [-Wunused-but-set-variable]
+     bool haveGenome        = false;
+          ^~~~~~~~~~
+multiIntersectBedMain.cpp:48:10: warning: variable 'haveFiller' set but not used [-Wunused-but-set-variable]
+     bool haveFiller        = true;
+          ^~~~~~~~~~
+pairToBedMain.cpp: In function 'int pairtobed_main(int, char**)':
+pairToBedMain.cpp:43:10: warning: variable 'haveFraction' set but not used [-Wunused-but-set-variable]
+     bool haveFraction       = false;
+          ^~~~~~~~~~~~
+pairToBed.cpp: In member function 'void BedIntersectPE::FindSpanningOverlaps(const BEDPE&, std::vector<BED>&, const string&)':
+pairToBed.cpp:257:12: warning: variable 'spanLength' set but not used [-Wunused-but-set-variable]
+     CHRPOS spanLength = 0;
+            ^~~~~~~~~~
+pairToBed.cpp: In member function 'bool BedIntersectPE::FindOneOrMoreSpanningOverlaps(const BEDPE&, const string&)':
+pairToBed.cpp:310:9: warning: variable 'spanLength' set but not used [-Wunused-but-set-variable]
+     int spanLength = 0;
+         ^~~~~~~~~~
+pairToPairMain.cpp: In function 'int pairtopair_main(int, char**)':
+pairToPairMain.cpp:44:10: warning: variable 'haveFraction' set but not used [-Wunused-but-set-variable]
+     bool haveFraction = false;
+          ^~~~~~~~~~~~
+pairToPair.cpp: In member function 'void PairToPair::FindOverlaps(const BEDPE&)':
+pairToPair.cpp:112:14: warning: variable 'found1' set but not used [-Wunused-but-set-variable]
+         bool found1 = false;
+              ^~~~~~
+pairToPair.cpp:113:14: warning: variable 'found2' set but not used [-Wunused-but-set-variable]
+         bool found2 = false;
+              ^~~~~~
+RegressTest.cpp: In member function 'bool RegressTest::executeAndCompareCorrectness(const fileListType&)':
+RegressTest.cpp:431:8: warning: ignoring return value of 'int system(const char*)', declared with attribute warn_unused_result [-Wunused-result]
+  system(diffCmd.c_str());
+  ~~~~~~^~~~~~~~~~~~~~~~~
+RegressTest.cpp: In member function 'bool RegressTest::startMemoryProfile(bool)':
+RegressTest.cpp:573:7: warning: ignoring return value of 'char* fgets(char*, int, FILE*)', declared with attribute warn_unused_result [-Wunused-result]
+  fgets(sLine, 4192, fp);
+  ~~~~~^~~~~~~~~~~~~~~~~
+RegressTest.cpp: In member function 'bool RegressTest::calcMemoryStats()':
+RegressTest.cpp:622:8: warning: ignoring return value of 'char* fgets(char*, int, FILE*)', declared with attribute warn_unused_result [-Wunused-result]
+   fgets(sLine, 4192, fp);
+   ~~~~~^~~~~~~~~~~~~~~~~
+unionBedGraphsMain.cpp: In function 'int unionbedgraphs_main(int, char**)':
+unionBedGraphsMain.cpp:46:10: warning: variable 'haveFiles' set but not used [-Wunused-but-set-variable]
+     bool haveFiles         = false;
+          ^~~~~~~~~
+unionBedGraphsMain.cpp:48:10: warning: variable 'haveGenome' set but not used [-Wunused-but-set-variable]
+     bool haveGenome        = false;
+          ^~~~~~~~~~
+unionBedGraphsMain.cpp:49:10: warning: variable 'haveFiller' set but not used [-Wunused-but-set-variable]
+     bool haveFiller        = true;
+          ^~~~~~~~~~

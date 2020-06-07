@@ -1,0 +1,26 @@
+index.c: In function 'mm_idx_load':
+index.c:472:3: warning: ignoring return value of 'fread', declared with attribute warn_unused_result [-Wunused-result]
+   fread(&l, 1, 1, fp);
+   ^~~~~~~~~~~~~~~~~~~
+index.c:475:4: warning: ignoring return value of 'fread', declared with attribute warn_unused_result [-Wunused-result]
+    fread(s->name, 1, l, fp);
+    ^~~~~~~~~~~~~~~~~~~~~~~~
+index.c:478:3: warning: ignoring return value of 'fread', declared with attribute warn_unused_result [-Wunused-result]
+   fread(&s->len, 4, 1, fp);
+   ^~~~~~~~~~~~~~~~~~~~~~~~
+index.c:487:3: warning: ignoring return value of 'fread', declared with attribute warn_unused_result [-Wunused-result]
+   fread(&b->n, 4, 1, fp);
+   ^~~~~~~~~~~~~~~~~~~~~~
+index.c:489:3: warning: ignoring return value of 'fread', declared with attribute warn_unused_result [-Wunused-result]
+   fread(b->p, 8, b->n, fp);
+   ^~~~~~~~~~~~~~~~~~~~~~~~
+index.c:490:3: warning: ignoring return value of 'fread', declared with attribute warn_unused_result [-Wunused-result]
+   fread(&size, 4, 1, fp);
+   ^~~~~~~~~~~~~~~~~~~~~~
+index.c:497:4: warning: ignoring return value of 'fread', declared with attribute warn_unused_result [-Wunused-result]
+    fread(x, 8, 2, fp);
+    ^~~~~~~~~~~~~~~~~~
+index.c:505:3: warning: ignoring return value of 'fread', declared with attribute warn_unused_result [-Wunused-result]
+   fread(mi->S, 4, (sum_len + 7) / 8, fp);
+   ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ar: `u' modifier ignored since `D' is the default (see `U')
