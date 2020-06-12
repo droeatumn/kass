@@ -48,7 +48,7 @@ void loadTbl(tReader, PrintWriter writer) {
             err.println "loadTbl: l2Split size=${l2Split.size()}"
             err.println "loadTbl: att=${att}"
         }
-        if(l1Split[0].startsWith(">Feature")) {
+        if(l1Split[0].startsWith(">Feature")) { // e.g., >Feature gb|MN167504_3DL2_160218-171148|
             (f, name) = l1Split[0].split(' ')
             l1Split[0] = f + " gb|" + name + "|"
         }
@@ -136,7 +136,7 @@ void loadTbl(tReader, PrintWriter writer) {
         writer.println l1Split.join('\t')
         l1Split = l2Split
     } // each line
-    writer.println l2Split.join('\t')
+    writer.println l1Split.join('\t')
 
 } // loadTbl
 
