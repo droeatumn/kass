@@ -89,6 +89,9 @@ void loadFT(tReader, idPosFtTable) {
             posTmp = id[idx+1..-1]
             (posTmp, end) = posTmp.split('-')
             position = posTmp.toInteger()
+            if(debugging <= 3) {
+                err.println "loadFT: setting postion to ${position}"
+            }
             pastGene = false
             continue
         } else if(l.contains("db_xref")) { // remove db_xref
