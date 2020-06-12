@@ -151,15 +151,12 @@ void writeOutput(String outDir, String fastaName,
 	fileName = fastaName.trim().substring(fastaName.lastIndexOf(File.separator)+1, fastaName.length())
 	if(debugging <= 2) {
 		err.println "writeOutput: fileName=${fileName}"
-		//err.println "writeOutput: " + descGeneSeqTable.get("KP420439.1", " 2DL1S1S2")//todo
 	}
-	//err.println descGeneSeqTable //todo
 	// write fastas
 	columnSet.each { geneName ->
-		//err.println "writeOutput: orig geneName=${geneName}"//todo
 		outGeneName = geneName.replaceAll("/2D", "").replaceAll("/3D", "")
 		outputFastaName = outDir + "/" +
-			fileName.replaceFirst(".fasta", "").replaceFirst(".fa", "") +
+			fileName.replaceFirst(".fasta", "").replaceFirst(".fa", "").replaceFirst("-orient", "") +
 			"_" + outGeneName + featureFastaExt
 		if(debugging <= 1) {
 			err.println "writing ${rowSet.size()} sequences to ${outputFastaName} ..."
@@ -186,7 +183,7 @@ void writeOutput(String outDir, String fastaName,
 	// write annotation
 	//todo: make the names match the ones in the feature files
 	outputAnnotationName = outDir + "/" +
-		fileName.replaceFirst(".fasta", "").replaceFirst(".fa", "") +
+		fileName.replaceFirst(".fasta", "").replaceFirst(".fa", "").replaceFirst("-orient", "") +
 		annotationExt
 	if(debugging <= 1) {
 		err.println "writing to ${outputAnnotationName} ..."
@@ -292,7 +289,7 @@ ArrayList<HashBasedTable> extractDNAFeaturesFromAll(HashMap<String,String> descM
 									   dnaLocationsList, dnaFasta, descGeneSeqTable,
 									   descGeneStartIndexTable, descGeneEndIndexTable)
 						if(debugging <= 2) { 
-							err.println "${workingMarkupNew}, ${workingMarkupIndexNew}"
+							err.println "extractDNAFeaturesFromAll: ${workingMarkupNew}, ${workingMarkupIndexNew}"
 						}
 						workingMarkup = workingMarkupNew
 						workingMarkupIndex = workingMarkupIndexNew
@@ -329,6 +326,7 @@ ArrayList<HashBasedTable> extractDNAFeaturesFromAll(HashMap<String,String> descM
 						found = true
 					} // found 3DL2
 				} // each 3DL2 allele
+
 				return // next geneNomen
 			} // doesn't match a gene; potential partial 3DL3 or 3DL2
 			
@@ -343,7 +341,8 @@ ArrayList<HashBasedTable> extractDNAFeaturesFromAll(HashMap<String,String> descM
 							   workingMarkup, workingMarkupIndex,
 							   dnaLocationsList, dnaFasta, descGeneSeqTable,
 							   descGeneStartIndexTable, descGeneEndIndexTable)
-				if(workingMarkupNew != "") {
+//				if(workingMarkupNew != "") {
+                if(workingMarkupIndexNew > workingMarkupIndex) {
 					if(debugging <= 3) {
 						err.println "extractDNAFeaturesFromAll: found ${geneNomen} ${geneMarkup} in ${workingMarkup}"
 						err.println "extractDNAFeaturesFromAll: workingMarkupIndex=${workingMarkupIndex} workingMarkupIndexNew=${workingMarkupIndexNew}"
@@ -353,11 +352,11 @@ ArrayList<HashBasedTable> extractDNAFeaturesFromAll(HashMap<String,String> descM
 					previousGeneNomen = geneNomen
 					break // break out of the markup for this gene
 				}
+			    if(workingMarkup == "") {
+				    err.println "extractDNAFeaturesFromAll: ERROR: couldn't find ${geneNomen} markup in part of full markup ${fullMarkup}"
+				    System.exit(1)
+			    }
 			} // each markup for this gene
-			if(workingMarkup == "") {
-				err.println "extractDNAFeaturesFromAll: ERROR: couldn't find ${geneNomen} markup in part of full markup ${fullMarkup}"
-				System.exit(1)
-			}
 		} // each genNomen
 	} // each description and its markup
 
@@ -424,34 +423,38 @@ ArrayList extractDNA(String desc, String previousGeneNomen, String nomenStr,
 		} else if(geneNomen == "3DL1L2"){
 //            dnaIndex -= 5000 // not for MN167507
 			dnaEndIndex = dnaFasta.length() - 1
+		} else if(geneNomen == "3DL2") {
+			dnaIndex -= 5000
 		}
 	} else if(geneNomen == "2DL5") {
         // needs more padding on proximal(centromeric) end
         dnaIndex -= 3500
     } else if(geneNomen == "3DL1S1") {
-        // needs more padding on proximal(centromeric) end
-        dnaEndIndex += 2500
+        dnaIndex -= 300 // really 200 should be good
+        dnaEndIndex += 3000
     } else if(geneNomen == "3DL1L2") { // for the fusion
         // needs more padding on proximal(centromeric) end
         // and distal (telomeric) end
-//todo(put bak? test wih MN167530)        dnaIndex -= 200
         dnaIndex -= 2400
         dnaEndIndex += 2000
     } else if(geneNomen == "3DL2") {
         // needs more padding on proximal(centromeric) end
         // and distal (telomeric) end
-//todo(put bak? test wih MN167530)        dnaIndex -= 200
         dnaIndex -= 5000
         dnaEndIndex += dnaFasta.length() - 1
     } else if(geneNomen == "3DP1") {
+        dnaIndex -= 300
         // needs more padding on distal(telomeric) end
         dnaEndIndex += 2000
     } else if((geneNomen == "2DL2L3S3S4S5") || (geneNomen == "2DS4") 
               || (geneNomen == "2DL2")) {
-//    } else if((geneNomen == "2DL2L3S3S4S5")) {
         // 2DS4 needs more padding on both ends
-        dnaIndex -= 2000 // MN167521 2DS4 and MN167525 2DL2
+        dnaIndex -= 2500 // MN167504 2DS5
         dnaEndIndex += 1500 // sometimes shouldn't be used; sometimes should (MN16752521)
+    } else if(geneNomen == "2DL1S1S2") {
+        dnaIndex -= 200
+    } else if(geneNomen == "2DP1") {
+        dnaIndex -= 300
     }
 	if(debugging <= 2) {
 		err.println "extractDNA: dnaIndex=${dnaIndex}"
@@ -482,21 +485,12 @@ ArrayList extractDNA(String desc, String previousGeneNomen, String nomenStr,
 			err.println "extractDNA: multiple sequences for ${haplotypeLocus} in ${desc}"
 //            err.println "keeping the longer one"// todo: maybe not the best?
 		}
-  // this doesn't work with multiple different genes (e.g., 2DL2L3S3S4S5)
-  // but is needed for some genes with g1 g2 etc from augustus
-  /*        String firstSeq = seqList[0]
-          if(firstSeq.length() < (dnaEndIndexStore - dnaIndex)) {
-		    seqList[0] = geneDNA
-            descGeneStartIndexTable.get(desc, haplotypeLocus).clear()
-            descGeneEndIndexTable.get(desc, haplotypeLocus).clear()
-*/
 		seqList.add(geneDNA)
 		startList.add(dnaIndex)
 		endList.add(dnaEndIndexStore)
 		descGeneSeqTable.put(desc, haplotypeLocus, seqList)
 		    descGeneStartIndexTable.get(desc, haplotypeLocus).add(dnaIndex)
 		    descGeneEndIndexTable.get(desc, haplotypeLocus).add(dnaEndIndexStore)
-//        }
 	}
 
 	if(debugging <= 2) {
@@ -521,7 +515,7 @@ ArrayList extractDNA(String desc, String previousGeneNomen, String nomenStr,
 		workingMarkup = workingMarkup[markupEndIndex..-1]
 	} else {
 		workingMarkup = ""
-		workingMarkupIndex = 0
+//		workingMarkupIndex = 0
 	}
 
  	if(debugging <= 1) {
