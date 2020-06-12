@@ -4,12 +4,7 @@
  * Annotates strings in fasta files.
  * 
  * @author Dave Roe
- * @todo: this fails when the direction is the wrong way   *
- *    maybe add a step that standardizes based on the probes?
- *    also have to break the contigs into multiple files
  * @todo handle gzipped input
- * @todo remove full paths to augustus bin and scripts
- * @todo rename gl.txt
  * @todo standardize "KIR" in the output
  */
 
@@ -26,6 +21,7 @@ params.nocontainer = "null"
 params.sbt = null
 
 refAlleleDir = file("${home}/input/references/genes")
+jointAlleleDir = file("${home}/input/references/joints")
 featuresFile = file("${home}/input/features.txt") // markup features
 markerFile = file("${home}/input/cap.fasta") // capture markers
 alignProbesFile = file("${home}/src/alignment2ProbePairs.groovy")
@@ -56,7 +52,7 @@ process orient {
     set s, file(r) from readTap
     path(markerFile)
   output:
-    tuple s, path{"${s}*_orient.fasta"} into orientedFasta
+    tuple s, path{"${s}*-orient.fasta"} into orientedFasta
   script:
     def rootName = r.name.replaceFirst(".gz", "")
     def gzFlag = ""  // tell bowtie it is a fasta or fastq
@@ -68,7 +64,7 @@ process orient {
         gunzip -f ${r}
     fi
     orient.groovy -i ${rootName} -p ${markerFile} -o tmp.fasta
-    reformat.sh in=tmp.fasta out=${s}_orient.fasta fastawrap=1000000 overwrite=true
+    reformat.sh in=tmp.fasta out=${s}-orient.fasta fastawrap=1000000 overwrite=true
     """
 } // orient
 
@@ -91,16 +87,13 @@ process structure {
     path(annotateFile)
     path(featuresFile)
   output:
-//    set s, file {"*_sorted.bam*"} into bamOutput
-//    tuple val(s), file("*_sorted.bam"), file("*_sorted.bam.bai"), file(r) into bamOutput
     tuple s, file{"${s}*_markup.txt"} into markup
     tuple s, path{"${s}*_annotation.txt"} into annotation
-//    tuple s, path{"${s}*_annotation_strings.txt"} into annotationStrings
     tuple s, path{r}, path{"${s}*_features.fasta"} into features mode flatten
     
   script:
     // todo: modularize this chunk
-    def bamName = r.name.replaceFirst(".fastq.gz", "").replaceFirst(".fasta.gz", "").replaceFirst(".fastq", "").replaceFirst(".fasta", "")
+    def bamName = r.name.replaceFirst(".fastq.gz", "").replaceFirst(".fasta.gz", "").replaceFirst(".fastq", "").replaceFirst(".fasta", "").replaceFirst("-orient", "")
     def outName = bamName
     def fastaFlag = ""  // tell bowtie it is a fasta or fastq
     if((r.name.endsWith("fasta") || r.name.endsWith("fa")) ||
@@ -138,8 +131,6 @@ process structure {
     # annotate the markup with the genes
     ./${annotateFile} -i ${featuresFile} -f ${r} -m ${bamName}_markup.txt -o . 2> ${bamName}_annotation_err.txt
     echo "done"
-    # todo: do this only in case of the fusion
-#    mv ${s}_3DL2_features.fasta ${s}_3DL1L2_features.fasta # todo needed for fusion
     deep.pl replace '2DL4~3DL2' '2DL4~3DL1L2' '*features.fasta'
     deep.pl replace '2DL4~3DL2' '2DL4~3DL1S1' '*_annotation.txt'
     cut -f2 ${bamName}_annotation.txt | sort | uniq -c > ${bamName}_annotation_strings.txt
@@ -147,13 +138,9 @@ process structure {
     """
 } // structure
 
-/*
- * Annotates the collection of a single feature using blat.
- * Output is id_locus.psi file for the input feature sequences.
- */
-process blat {
-    if(params.nocontainer == "null") { 
-        container = "hiroko/blat-hg19:latest"
+process interpret {
+    if(params.nocontainer == "null") {
+        container = params.container
     }
     //publishDir params.output, mode: 'copy', overwrite: true
     tag { s }
@@ -162,8 +149,8 @@ process blat {
     set s, file(inContig), file(r) from features
     path(refAlleleDir)
   output:
-    tuple s, path(inContig), path(r), path{"${s}*.psi"} optional true into psi
-
+    path{"${s}*.tbl.txt"} optional true into tables
+    
   script:
     def nameNoExt = r.name.replaceAll("_features.fasta", "")
     def intervening = nameNoExt.contains("3DP1-2DL4") // skip this one
@@ -171,125 +158,16 @@ process blat {
     def locus = nameNoExt[i+1..-1]
 
     """
-    if [ "${intervening}" == "false" ]; then
-        echo "${intervening}"
-        echo "blat: ${r} ${refAlleleDir}/KIR${locus}_nuc.fasta ${s}.psi"
-        blat ${r} ${refAlleleDir}/KIR${locus}_nuc.fasta ${s}_${locus}.psi
+    if [ "${locus}" != "3DP1-2DL4" ]; then
+        gfi.groovy -i ${refAlleleDir} -f ${r} -g KIR${locus} -j ${jointAlleleDir} -o . 2> gfi_${s}_${locus}_err.txt
     fi
     """
-} // blat
+
+} // 
+
+allFTs = tables.collectFile(name: 'tbl.txt', newLine: true)
 
 /*
- * Annotates the blat-annotated sequences into hints.
- * Output is id_locus.gff file for the input feature sequences.
- */
-process hints {
-    if(params.nocontainer == "null") { 
-        container = "chrishah/premaker-plus:18"
-    }
-    //publishDir params.output, mode: 'copy', overwrite: true
-    tag { s }
-
-  input:
-    set s, file(inContig), file(r), file(p) from psi
-  output:
-    tuple s, path(inContig), path(r), path{"${s}_*.gff" } optional true into gff
-
-  script:
-    def nameNoExt = p.baseName
-    def i = nameNoExt.lastIndexOf('_')
-    def locus = nameNoExt[i+1..-1]
-    """
-    echo "blat2hints --in=${p} --out=${s}_${locus}.gff"
-    blat2hints.pl --in=${p} --out=${s}_${locus}.gff
-    """
-} // hints
-
-/*
- * Uses the hints file to annotate with AUGUSTUS gene annotation per locus.
- * Output is *_augustus.gff.
- * requires ENV AUGUSTUS_CONFIG_PATH env to be set
- */
-process augustus {
-    if(params.nocontainer == "null") { 
-        container = params.container
-    }
-    validExitStatus 0,1
-    //publishDir params.output, mode: 'copy', overwrite: true
-    tag { s }
-
-  input:
-    set s, file(inContig), file(r), file(g) from gff
-    path(refAlleleDir)    
-  output:
-    tuple s, path(inContig), path(r), path("*_augustus.gff") optional true into augustus
-    
-  script:
-    def nameNoExt = g.baseName
-    def i = nameNoExt.lastIndexOf('_')
-    def locus = nameNoExt[i+1..-1]
-    def fullLocus = "KIR" + locus
-    """
-    #echo "augustus ${s} ${g}"
-    #echo $PATH
-    /root/augustus/bin/augustus --species=human --UTR=on --strand=both --sample=100 --keep_viterbi=true --alternatives-from-sampling=false --genemodel=partial --hintsfile=${g} --extrinsicCfgFile=extrinsic.ME.cfg --protein=on --introns=on --start=on --stop=on --cds=on --codingseq=on --alternatives-from-evidence=true --proteinprofile=genes/${fullLocus}_prot_msa.prfl ${r} --outfile=${s}_${locus}_augustus.gtf 2> ${s}_augustus_err.txt
-    ret=1
-    if grep -q gene_id ${s}_${locus}_augustus.gtf; then
-        /root/augustus/scripts/gtf2gff.pl < ${s}_${locus}_augustus.gtf --out=${s}_${locus}_augustus.gff --gff3
-    else
-        exit 0    # not working (todo)
-    fi
-    """
-} // augustus
-
-/*
- * Takes the augustus feature annotation, annotates with IPD-KIR, and
- * makes it suitable for table2asn_GFF.
- * Output is a new GFF and gl.txt
- */
-// makes the feature table and annotates wrt IPD-KIR
-process alleles {
-    if(params.nocontainer == "null") { 
-        container = params.container
-    }
-    publishDir params.output, mode: 'copy', overwrite: true
-    tag { s }
-
-  input:
-    set s, file(inContig), file(r), file(g) from augustus // r is fasta, g is gff
-    path(refAlleleDir)
-  output:
-    path("*.gl.txt") optional true into gl
-    path("*.ft.txt") optional true into ftMod
-    path("*_mod.gff") optional true into gffMod
-  script:
-    def nameNoExt = g.name.replaceAll("_augustus.gff", "")
-    def i = nameNoExt.lastIndexOf('_')
-    def locus = nameNoExt[i+1..-1]
-    def fullLocus = "KIR" + locus
-    """
-    #echo "interpret alleles ${s} ${g}"
-    # cdsexons
-    /root/augustus/scripts/getAnnoFasta.pl --seqfile ${r} ${g} 2> ${s}_${locus}_getAnnoFasta_err.txt
-    # aa and codingseq
-    /root/augustus/scripts/getAnnoFastaFromJoingenes.py -g ${r} -3 ${g} -o ${s}_${locus}_augustus 2> ${s}_${locus}_getAnnoFastaFromJoingenes_err.txt
-    gff2ftGene.groovy -g ${fullLocus} -i ${refAlleleDir} -f ${g} -s ${r} -l ${s}_${fullLocus}.gl.txt 2> ${s}_${locus}.alleles_err.txt
-    # MN167529_2DS4 doesn't work because of the augustus g2 (todo)
-    # just gonna go without g2 for now
-#    if [ -f ${s}_2DS4_augustus.gff ]; then
-#    if [ -f ${s}_3DL1L2_augustus.gff ]; then
-#        cat ${s}_${locus}_augustus.gff | grep -v g2 > tmp.gff
-#        mv tmp.gff ${s}_${locus}_augustus.gff
-#    fi
-    augustus2NCBI.groovy -g ${fullLocus} -i ${refAlleleDir} -f ${s}_${locus}_augustus.gff -s ${r} -l ${s}_${fullLocus}.gl.txt 2> ${s}_${locus}_aug2NCBI_err.txt
-    """
-} // alleles
-
-allModGFFs = gffMod.collectFile(name: 'mod.gff', newLine: true)
-modGFFwFasta = allModGFFs.combine(annotateReads)
-
-allModFTs = ftMod.collectFile(name: 'mod.ft.txt', newLine: true)
-
 process publishGL {
     if(params.nocontainer == "null") { 
         container = params.container
@@ -303,60 +181,28 @@ process publishGL {
     """
     """
 } // publishGL
-
-/*
- * Combine the per-feature GFFs into the per contig annotation.
- * Run through table2asn_GFF to create the NCBI gff, sqn, and a report.
- * @todo have to add partial "<" and ">" here
- */
-process combineGFF {
-    if(params.nocontainer == "null") { 
-        container = params.container
-    }
-    publishDir params.output, mode: 'copy', overwrite: true
-    input:
-        tuple path(modGFF), val(desc), path(inContig) from modGFFwFasta
-        file sbtF from sbtFile
-    output:
-        path("*.sqn")
-        path("*.gbf")
-        path("*.dr")
-        path("*.tbl")
-        path("*.err")
-    script:
-    """
-    echo "${modGFF}, ${desc}, ${inContig}"
-    combineGFF.groovy -i mod.gff -o . 2> combineGFF_${desc}_err.txt
-    linux64.table2asn_GFF -augustus-fix -f ${desc}.gff -i ${inContig} -outdir . -genbank -verbose -euk -V b -Z  -t ${sbtF} -j "[organism=Homo sapiens]"
-    gbf2tbl.pl ${desc}.gbf
-    cat ${desc}.tbl | grep -v protein_id > tmp.tbl
-    modifyTbl.groovy -i tmp.tbl -o ${desc}.tbl 2> ${desc}_tbl_err.txt
-    mv tmp.tbl tmp.tbl.bak
-    """
-} // combineGFF
+*/
 
 /*
  * Combine the per-feature feature tables into the per contig annotation.
- * @todo this isn't working; not collecting the files like expected
+ * @todo linux64.table2asn_GFF -augustus-fix -f ${desc}.gff -i ${inContig} -outdir . -genbank -verbose -euk -V b -Z  -t ${sbtF} -j "[organism=Homo sapiens]"
+
  */
-process combineFT {
+process combine {
     if(params.nocontainer == "null") { 
         container = params.container
     }
     publishDir params.output, mode: 'copy', overwrite: true
     input:
-        path(ft) from allModFTs
+        path(ft) from allFTs
     output:
         path("*.ft.txt")
     script:
     """
     echo "${ft}"
-    if [ ! -f mod.ft.txt ]; then
-        cp *.ft.txt mod.ft.txt
-    fi
-    combineFT.groovy -i mod.ft.txt 2> combineFT_err.txt
+    combineFT.groovy -i tbl.txt 2> combineFT_err.txt
     """
-} // combineFT
+} // combine
 
 // combineGL (todo)
 
