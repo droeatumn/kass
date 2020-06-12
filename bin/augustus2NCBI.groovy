@@ -11,7 +11,6 @@
  *   - log4j 1 https://logging.apache.org/log4j/1.2/
  *   e.g., 
  *     export CLASSPATH=$HOME/bin/jars/dsh-commandline-1.1.jar:$CLASSPATH
- *     export CLASSPATH=$HOME/bin/jars/biojava4-core.jar:$CLASSPATH
  *     export CLASSPATH=$HOME/bin/jars/dsh-commandline-1.1.jar:$CLASSPATH
  *     export CLASSPATH=$HOME/bin/jars/super-csv.jar:$CLASSPATH
  *     export CLASSPATH=$HOME/bin/jars/biojava4-core.jar:$CLASSPATH
@@ -738,7 +737,7 @@ def Expando processGFFFullGene(String gene, Map<String, String> ipdGeneMap,
         // full sequence match *
         if(sequenceContains(seq, genSeq)) {
             (ipdGeneNew, gcall) = interpFullGene(header)
-            fullName = "${ipdGeneNew}*${gcall}"
+            fullName = "${ipdGeneNew}*${gcall} (full)"
             if(debugging <= 3) {
                 err.println "processGFFFullGene: *match on full gene: ${fullName}"
             }
