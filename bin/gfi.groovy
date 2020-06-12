@@ -174,6 +174,7 @@ List<String> joinFeatures(String gene, DNASequence dnaSeq,
                 // and telomeric are partial on the 3'
                 if(isTelomeric(gene)) { 
                     partial3p = previousRow(row, gene)
+                    err.println "partial3p from previous row = ${partial3p}"//todo
                 } else { 
                     partial5p = nextRow(row, gene)
                 }
@@ -335,9 +336,30 @@ def void output(DNASequence dnaSeq, String gene, String allele,
     Integer startExonIdx = 0
     Integer endExonIdx = 10
     (geneStart, geneEnd) = getGeneStartEnd(idxRNATable, liftPosition)
-
+    // exon 0 is 5' utr, exon 10 is 3' utr
+    idx5pStart = idxRNATable.get("exon0", "5p")
+    if(idx5pStart == null) {
+        if(gene.contains("3DL3")) { 
+            idx5pStart = getFeatureStart(dnaSeq.getOriginalHeader()) + 1
+        } else {
+            idx5pStart = geneStart
+        }
+    } else { 
+        idx5pStart += liftPosition + 1
+    }
+    idx3pEnd = idxRNATable.get("exon10", "3p")
+    if(idx3pEnd == null) {
+        if(gene.contains("3DL2")) {
+            idx3pEnd = getFeatureEnd(dnaSeq.getOriginalHeader()) + 1
+        } else {
+            idx3pEnd = geneEnd
+        }
+    } else { 
+        idx3pEnd += liftPosition + 1
+    }
+    
     // gene
-    writer.println "${partial5pStr}${geneStart}\t${partial3pStr}${geneEnd}\tgene"
+    writer.println "${partial5pStr}${idx5pStart}\t${partial3pStr}${idx3pEnd}\tgene"
     writer.println "\t\t\tgene\t${gene}"
     writer.println "\t\t\tallele\t${gene}*${allele}" + partialStr
     writer.println "\t\t\tnote\tname checked as of ${NOMEN_VER}"
@@ -350,21 +372,12 @@ def void output(DNASequence dnaSeq, String gene, String allele,
 
     // mRNA
     first = true
-    // exon 0 is 5' utr, exon 10 is 3' utr
-    idx5pStart = idxRNATable.get("exon0", "5p")
-    if(idx5pStart == null) {
-        idx5pStart = geneStart
-    }
-    idx3pEnd = idxRNATable.get("exon10", "3p")
-    if(idx3pEnd == null) {
-        idx3pEnd = geneEnd
-    }
     (1..9).each { exonIndex ->
         String row = "exon" + exonIndex.toString()
         idx5p = idxRNATable.get(row, "5p")
         idx3p = idxRNATable.get(row, "3p")
         if(debugging <= 2) {
-            err.println "output: mRNA exonIndex=${exonIndex}, row=${row}, idx5p=${idx5p}, idx3p=${idx3p}"
+            err.println "output: mRNA exonIndex=${exonIndex}, row=${row}, idx5p=${idx5p}, idx3p=${idx3p}, liftPosition=${liftPosition}"
         }
         if((idx5p == null) && (idx3p == null)) {
             return // next exon
@@ -373,16 +386,38 @@ def void output(DNASequence dnaSeq, String gene, String allele,
         idx3pNew = idx3p ? (idx3p + liftPosition + 1) : null
         String idx5pStr = idx5p ? idx5pNew : ""
         String idx3pStr = idx3p ? idx3pNew : ""
-        if(row == "exon1") { // extend 5' through utr
-            idx5pStr = idx5pStart + liftPosition + 1
-        } else if(row == "exon9") { // extend 3' through utr
-            idx3pStr = idx3pEnd + liftPosition + 1
+        if((row == "exon1") || (partial5p == row)) { // extend 5' through utr
+            idx5pStr = idx5pStart
+        } else if((row == "exon9") || (partial3p == row)) { // extend 3' through utr
+            featureEnd = getFeatureEnd(dnaSeq.getOriginalHeader()) + 1
+            if(debugging <= 2) {
+                err.println "output: RNA featureEnd=${featureEnd}, idx3pNew=${idx3pNew}, liftPosition=${liftPosition}, idx3pEnd=${idx3pEnd}"
+            }
+            if(featureEnd < idx3pEnd) {
+                idx3pStr = featureEnd + 1
+            } else { 
+                idx3pStr = idx3pEnd
+            }
         }
+        if(debugging <= 2) {
+            err.println "output: idx5pStr=${idx5pStr}, idx3pStr=${idx3pStr}"
+        }
+/*        partial5pStr = ''
+        partial3pStr = ''
+        if(partial5p == row) { // partial should point to start of feature
+            partial5pStr = '<'
+            idx5pStr = getFeatureStart(dnaSeq.getOriginalHeader()) + 1
+        }
+        if(partial3p == row) { // partial should point to start of feature
+            partial3pStr = '>'
+            idx3pStr = getFeatureEnd(dnaSeq.getOriginalHeader()) + 1
+        }
+  */      
         partial5pStr = (partial5p == row) ? '<' : ''
         partial3pStr = (partial3p == row) ? '>' : ''
 
         if(debugging <= 3) {
-            err.println "output: (partial5p == row)"
+            err.println "output: " + (partial5p == row)
             err.println "output: partial5p=${partial5p}, partial5pStr=${partial5pStr}"
             err.println "output: partial3p=${partial3p}, partial3pStr=${partial3pStr}"
         }
@@ -1150,6 +1185,11 @@ def Boolean isTelomeric(String gene) {
 
 def String previousRow(String row, String gene) {
     Integer exonIndex = new Integer(row[-1])
+    String exonIndex2 = row[-2]
+    if(exonIndex2 == "1") { // 10
+        exonIndex = 10
+    }
+    err.println "previousRow: exonIndex=${exonIndex}"//todo
     exonIndex--
     if((gene.contains(/3DP1/) && (exonIndex == 2)) ||
        ((gene =~ /2DL[1-3]/) && (exonIndex == 3))  ||
@@ -1162,11 +1202,17 @@ def String previousRow(String row, String gene) {
        (gene.contains(/3DP1/) && (exonIndex >= 6))) { 
         exonIndex--
     }
-    return "exon" + exonIndex.toString()
+    ret = "exon" + exonIndex.toString()
+    err.println "previousRow: return=${ret}"//todo
+    return ret
 } // previousRow
 
 def String nextRow(String row, String gene) {
     Integer exonIndex = new Integer(row[-1])
+    String exonIndex2 = row[-2]
+    if(exonIndex2 == "1") { // 10
+        exonIndex = 10
+    }
     exonIndex++
     if((gene.contains(/3DP1/) && (exonIndex == 2)) ||
        ((gene =~ /2DL[1-3]/) && (exonIndex == 3))  ||
@@ -1198,6 +1244,25 @@ def Integer getFeatureStart(String desc) {
     }
     return position
 } // getFeatureStart
+
+// MN167504_2DL2L3S3S4S5_23918-43868
+def Integer getFeatureEnd(String desc) {
+    if(debugging <= 3) {
+        err.println "getFeatureEnd(desc=${desc})"
+    }
+
+    // separate location
+    idx = desc.lastIndexOf('_')
+    posTmp = desc[idx+1..-1]
+    (start, endTmp) = posTmp.split('-')
+    Integer position = endTmp.toInteger()
+    if(debugging <= 1) {
+        err.println "getFeatureEnd: return ${position}"
+    }
+    return position
+} // getFeatureEnd
+
+
 
 /*
  * handleArgs
