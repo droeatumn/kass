@@ -1,4 +1,4 @@
-FROM augustus:latest
+FROM ubuntu:latest
 
 # env vars
 ENV NXF_OPTS "-Xms1G -Xmx50G"
@@ -8,7 +8,6 @@ ENV JAVA_HOME /usr/lib/jvm/java-8-openjdk-amd64/
 ENV TMPDIR /tmp
 
 # apt stuff
-# augustus is 3.0 in apt, 3.3.3 in github
 RUN apt-get update && apt-get install -qyy curl git make vim cmake \
     gcc g++ unzip maven subversion gzip openjdk-8-jdk groovy wget \
     zlib1g-dev gnuplot lynx libncurses5-dev libncursesw5-dev libbz2-dev \
@@ -47,17 +46,6 @@ RUN cd /opt  && mkdir -p /opt/bin \
 
 RUN pip3 install --upgrade NanoPlot
 
-# stringsearchalgorithms
-#RUN cd /opt \
-#  && wget https://github.com/almondtools/stringsearchalgorithms/archive/stringsearchalgorithms-0.4.3.tar.gz \
-#  && gunzip stringsearchalgorithms-0.4.3.tar.gz \
-#  && tar -xvf stringsearchalgorithms-0.4.3.tar \
-#  && rm stringsearchalgorithms-0.4.3.tar \
-#  && cd stringsearchalgorithms-stringsearchalgorithms-0.4.3 \
-#  && mvn compile \
-#  && mvn package \
-#  && mv target/stringsearchalgorithms-0.4.3.jar /opt/kass/bin/jars/
-
 # google guava
 RUN cd /opt \
   && git clone https://github.com/google/guava.git \
@@ -76,11 +64,21 @@ ENV CLASSPATH /opt/kass/bin/jars/slf4j-api-1.7.5.jar:/opt/kass/bin/jars/biojava4
 ENV CLASSPATH /opt/guava/guava/target/guava-HEAD-jre-SNAPSHOT.jar:/opt/jars/commons-math3-3.6.1/commons-math3-3.6.1.jar:$CLASSPATH
 ENV CLASSPATH /opt/jars/guava-21.0.jar:$CLASSPATH
 
+# stringsearchalgorithms
+RUN cd /opt \
+  && wget https://github.com/almondtools/stringsearchalgorithms/archive/stringsearchalgorithms-0.4.3.tar.gz \
+  && gunzip stringsearchalgorithms-0.4.3.tar.gz \
+  && tar -xvf stringsearchalgorithms-0.4.3.tar \
+  && rm stringsearchalgorithms-0.4.3.tar \
+  && cd stringsearchalgorithms-stringsearchalgorithms-0.4.3 \
+  && mvn compile \
+  && mvn package \
+  && mv target/stringsearchalgorithms-0.4.3.jar /opt/kass/bin/jars/
+
 # environment variables
 ENV PATH /opt/bin:$PATH
 #ENV PATH /opt/lorma-bin_0.5_linux64:$PATH
 ENV PATH /opt/kass/bin/lorma-bin_0.5_linux64:$PATH
-ENV PATH /opt/kass/bin/quast-5.0.2:$PATH
 ENV PATH /opt/lordec-bin_0.9_linux64:$PATH
 ENV PATH /opt/bowtie2-2.3.5.1-linux-x86_64:$PATH
 ENV PATH /opt/qualimap_v2.2.1:$PATH
@@ -89,11 +87,6 @@ ENV PATH /opt/canu-2.0/Linux-amd64/bin:$PATH
 ENV PATH /opt/FastQC:$PATH
 ENV PATH /root/miniconda2/bin:$PATH
 # docker
-ENV AUGUSTUS_CONFIG_PATH /root/augustus/config
-ENV PATH /root/augustus/bin:$PATH
-ENV PATH /root/augustus/config:$PATH
-#apt ENV PATH /usr/share/augustus/scripts:$PATH
-#apt ENV AUGUSTUS_CONFIG_PATH /usr/share/augustus/config
 ENV TMPDIR=/opt/kass/work
 ENV TMP=/opt/kass/work
 
