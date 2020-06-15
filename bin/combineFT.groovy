@@ -15,7 +15,7 @@ import com.google.common.collect.Table
 import com.google.common.collect.HashBasedTable
 
 // things that may change per run
-debugging = 1 // TRACE=1, DEBUG=2, INFO=3
+debugging = 3 // TRACE=1, DEBUG=2, INFO=3
 
 // thing that probably won't change per run
 err = System.err
