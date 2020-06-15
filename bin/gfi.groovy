@@ -421,12 +421,11 @@ def void output(DNASequence dnaSeq, String gene, String allele,
 
     // CDS
     first = true
-    pseudoExonCount = 0
+    pseudoExonCount = 1
     (1..9).each { exonIndex ->
         if(debugging <= 2) {
             err.println "output: CDS exonIndex=${exonIndex}"
         }
-        pseudoExonCount++
         String row = "exon" + exonIndex.toString()
         idx5p = idxCDSTable.get(row, "5p")
         idx3p = idxCDSTable.get(row, "3p")
@@ -458,6 +457,7 @@ def void output(DNASequence dnaSeq, String gene, String allele,
         // exon number for pseudo genes
         if((gene =~ /[23]DP1/) && (pseudoVerbose == true)) {
             writer.println "\t\t\tnumber\t${pseudoExonCount}"
+            pseudoExonCount++
         }
     } // each CDS exon
     if(!(gene =~ /[23]DP1/)) {
