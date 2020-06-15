@@ -7,6 +7,10 @@
  *
  * e.g., gfi.groovy -i ~/git/kass/input/references/genes/ -f in/MN167504_2DL1S1S2_features.fasta -g KIR2DL1S1S2 -j uniq/ -o out
  * 
+ * Adding the -v option adds more output. It will include more informtion about
+ * IPD names, including the resolution of the match and the version of the IPD 
+ * database. GenBank will not allow this extra information.
+ *
  * Input 
  *   - A fasta files with one or more sequences specific to a gene. Assumes
  *     the sequences are oriented in the 5' to 3' fashion as in IPD-KIR>
@@ -46,6 +50,8 @@ File ipdDir, gffFile, outFile
 OptionAccessor options = handleArgs(args)
 String jointFileDir = options.j
 String gene = options.g
+err.println "options.v=" + options.v//todo
+Boolean verbose = ((options.v != null) && (options.v != false)) ? true : false
 
 Map<String,String> ipdProtMap // per gene
 Map<String,String> ipdNucMap
@@ -96,14 +102,15 @@ descSeqMap.each { desc, dnaSeq ->
     // intepret utr, exon, intron
     // and label ipd names at AA and CDS
     (ipdAASet, ipdCDSSet) = interpretIPD(gene, dnaSeq, aaSeq, cdsSeq,
-                                         ipdProtMap, ipdNucMap)
+                                         ipdProtMap, ipdNucMap, verbose)
     // label ipd names full gene
     (fullAlleleName, bestGeneName) = interpretIPDFull(gene, dnaSeq, ipdGeneMap)
     (bestGeneName, bestAllele) = bestAllele(bestGeneName, fullAlleleName,
-                                            ipdCDSSet.join("/"), ipdAASet.join("/"))
+                                            ipdCDSSet.join("/"), ipdAASet.join("/"),
+                                            verbose)
     
     output(dnaSeq, bestGeneName, bestAllele, idxRNATable, idxCDSTable, partial5p,
-           partial3p, shortened, writer)
+           partial3p, shortened, verbose, writer)
 } // each sequence in input fasta
 writer.close()
 
@@ -174,7 +181,6 @@ List<String> joinFeatures(String gene, DNASequence dnaSeq,
                 // and telomeric are partial on the 3'
                 if(isTelomeric(gene)) { 
                     partial3p = previousRow(row, gene)
-                    err.println "partial3p from previous row = ${partial3p}"//todo
                 } else { 
                     partial5p = nextRow(row, gene)
                 }
@@ -229,26 +235,30 @@ List<String> joinFeatures(String gene, DNASequence dnaSeq,
                 err.println "joinFeatures: retAAStr len=${retAAStr.length()}, ${retAAStr}"
             }
 
-            idxStopProtein = retAAStr.indexOf('*')
-            if(debugging <= 2) {
-                err.println "joinFeatures: idxStopProtein=${idxStopProtein}"
-            }
-
-            // if you hit a stop codon before the end of the last exon
-            if(idxStopProtein >= 0) {
-                //old idxCDS3p = idxCDS5p + ((idxStopProtein-1) * 3)
-                idxCDS3p = idxCDS5p + ((idxStopProtein) * 3) - retCDS.length() - 1
-                if(exonIndex != 10) {
-                    err.println "joinFeatures: setting shortenedProtein after stop codon, exonIndex=${exonIndex}"
-                    shortenedProtein = row
-                }
+            // don't check for stop codons in pseudo genes
+            // or if the start of the gene is missing
+            if(!(gene =~ /[23]DP/) && (partial5p == null)) {
+                idxStopProtein = retAAStr.indexOf('*')
                 if(debugging <= 2) {
-                    err.println "joinFeatures: found stop codon, idxStopProtein=${idxStopProtein}, idxCDS5p=${idxCDS5p}, idxCDS3p=${idxCDS3p}, len=${idxCDS3p-idxCDS5p}, ${retAAStr}"
+                    err.println "joinFeatures: idxStopProtein=${idxStopProtein}"
                 }
-                retAA = new ProteinSequence(retAAStr[0..idxStopProtein-1])
-                retCDSSeq = new DNASequence(dnaStr[idxCDS5p..idxCDS3p])
+
+                // if you hit a stop codon before the end of the last exon
+                if(idxStopProtein >= 0) {
+                    idxStopProtein++  // convert to 1-based index from input
+                    //old idxCDS3p = idxCDS5p + ((idxStopProtein-1) * 3)
+                    idxCDS3p = idxCDS5p + ((idxStopProtein) * 3) - retCDS.length() - 1
+                    if(exonIndex != 10) {
+                        err.println "joinFeatures: setting shortenedProtein after stop codon, exonIndex=${exonIndex}"
+                        shortenedProtein = row
+                    }
+                    if(debugging <= 3) {
+                        err.println "joinFeatures: found stop codon, idxStopProtein=${idxStopProtein}, idxCDS5p=${idxCDS5p}, idxCDS3p=${idxCDS3p}, len=${idxCDS3p-idxCDS5p}, ${retAAStr}"
+                    }
+                    retAA = new ProteinSequence(retAAStr[0..idxStopProtein-1])
+                    retCDSSeq = new DNASequence(dnaStr[idxCDS5p..idxCDS3p])
+                }
             }
-            
             idxCDSTable.put(row, "5p", idxCDS5p)
             idxCDSTable.put(row, "3p", idxCDS3p)
             retCDSSeq = new DNASequence(retCDS.append(dnaStr[idxCDS5p..idxCDS3p]).toString())
@@ -256,8 +266,11 @@ List<String> joinFeatures(String gene, DNASequence dnaSeq,
     } // each exon
 
     if(debugging <= 1) {
-        err.println "joinFeatures: return retAA len=${retAA.getLength()}, retCDS len=${retCDSSeq.getLength()}, partial5p=${partial5p}, partial3p=${partial3p}, shortenedProtein=${shortenedProtein}"
-        err.println "joinFeatures: return retAA=${retAA.getSequenceAsString()}"
+        err.println "joinFeatures: return partial5p=${partial5p}, partial3p=${partial3p}, shortenedProtein=${shortenedProtein}"
+        if(retAA != null) { 
+            err.println "joinFeatures: return retAA len=${retAA.getLength()}, retCDS len=${retCDSSeq.getLength()}"
+            err.println "joinFeatures: return retAA=${retAA.getSequenceAsString()}"
+        }
     }
     return [idxCDSTable, retAA, retCDSSeq, partial5p, partial3p, shortenedProtein]
 } // joinFeatures
@@ -311,7 +324,7 @@ def void output(DNASequence dnaSeq, String gene, String allele,
                 HashBasedTable<String,String,Integer> idxRNATable,
                 HashBasedTable<String,String,Integer> idxCDSTable,
                 String partial5p, String partial3p, String shortenedProtein,
-                PrintWriter writer) {
+                Boolean verbose, PrintWriter writer) {
     if(debugging <= 1) {
         err.println "output(${dnaSeq.getOriginalHeader()}, gene=${gene}, allele=${allele}, partial5p=${partial5p}, partial3p=${partial3p})"
     }
@@ -336,33 +349,17 @@ def void output(DNASequence dnaSeq, String gene, String allele,
     Integer startExonIdx = 0
     Integer endExonIdx = 10
     (geneStart, geneEnd) = getGeneStartEnd(idxRNATable, liftPosition)
-    // exon 0 is 5' utr, exon 10 is 3' utr
-    idx5pStart = idxRNATable.get("exon0", "5p")
-    if(idx5pStart == null) {
-        if(gene.contains("3DL3")) { 
-            idx5pStart = getFeatureStart(dnaSeq.getOriginalHeader()) + 1
-        } else {
-            idx5pStart = geneStart
-        }
-    } else { 
-        idx5pStart += liftPosition + 1
-    }
-    idx3pEnd = idxRNATable.get("exon10", "3p")
-    if(idx3pEnd == null) {
-        if(gene.contains("3DL2")) {
-            idx3pEnd = getFeatureEnd(dnaSeq.getOriginalHeader()) + 1
-        } else {
-            idx3pEnd = geneEnd
-        }
-    } else { 
-        idx3pEnd += liftPosition + 1
-    }
-    
+
     // gene
-    writer.println "${partial5pStr}${idx5pStart}\t${partial3pStr}${idx3pEnd}\tgene"
+    writer.println "${partial5pStr}${geneStart}\t${partial3pStr}${geneEnd}\tgene"
     writer.println "\t\t\tgene\t${gene}"
-    writer.println "\t\t\tallele\t${gene}*${allele}" + partialStr
-    writer.println "\t\t\tnote\tname checked as of ${NOMEN_VER}"
+    writer.print "\t\t\tallele\t${gene}*${allele}" + partialStr
+    if(verbose == true) {
+        writer.println partialStr
+        writer.print "\t\t\tnote\tname checked as of ${NOMEN_VER}"
+    }
+    writer.println ""
+    
     if((partial5p != null) || (partial3p != null)) {
         writer.println "\t\t\tnote\tpartial"
     }
@@ -371,69 +368,55 @@ def void output(DNASequence dnaSeq, String gene, String allele,
     }
 
     // mRNA
-    first = true
-    (1..9).each { exonIndex ->
-        String row = "exon" + exonIndex.toString()
-        idx5p = idxRNATable.get(row, "5p")
-        idx3p = idxRNATable.get(row, "3p")
-        if(debugging <= 2) {
-            err.println "output: mRNA exonIndex=${exonIndex}, row=${row}, idx5p=${idx5p}, idx3p=${idx3p}, liftPosition=${liftPosition}"
+    if(!(gene =~ /[23]DP/)) {
+        first = true
+        // exon 0 is 5' utr, exon 10 is 3' utr
+        idx5pStart = idxRNATable.get("exon0", "5p")
+        if(idx5pStart == null) {
+            idx5pStart = geneStart
         }
-        if((idx5p == null) && (idx3p == null)) {
-            return // next exon
+        idx3pEnd = idxRNATable.get("exon10", "3p")
+        if(idx3pEnd == null) {
+            idx3pEnd = geneEnd
         }
-        idx5pNew = idx5p ? (idx5p + liftPosition + 1) : null
-        idx3pNew = idx3p ? (idx3p + liftPosition + 1) : null
-        String idx5pStr = idx5p ? idx5pNew : ""
-        String idx3pStr = idx3p ? idx3pNew : ""
-        if((row == "exon1") || (partial5p == row)) { // extend 5' through utr
-            idx5pStr = idx5pStart
-        } else if((row == "exon9") || (partial3p == row)) { // extend 3' through utr
-            featureEnd = getFeatureEnd(dnaSeq.getOriginalHeader()) + 1
+        (1..9).each { exonIndex ->
+            String row = "exon" + exonIndex.toString()
+            idx5p = idxRNATable.get(row, "5p")
+            idx3p = idxRNATable.get(row, "3p")
             if(debugging <= 2) {
-                err.println "output: RNA featureEnd=${featureEnd}, idx3pNew=${idx3pNew}, liftPosition=${liftPosition}, idx3pEnd=${idx3pEnd}"
+                err.println "output: mRNA exonIndex=${exonIndex}, row=${row}, idx5p=${idx5p}, idx3p=${idx3p}"
             }
-            if(featureEnd < idx3pEnd) {
-                idx3pStr = featureEnd + 1
-            } else { 
-                idx3pStr = idx3pEnd
+            if((idx5p == null) && (idx3p == null)) {
+                return // next exon
             }
-        }
-        if(debugging <= 2) {
-            err.println "output: idx5pStr=${idx5pStr}, idx3pStr=${idx3pStr}"
-        }
-/*        partial5pStr = ''
-        partial3pStr = ''
-        if(partial5p == row) { // partial should point to start of feature
-            partial5pStr = '<'
-            idx5pStr = getFeatureStart(dnaSeq.getOriginalHeader()) + 1
-        }
-        if(partial3p == row) { // partial should point to start of feature
-            partial3pStr = '>'
-            idx3pStr = getFeatureEnd(dnaSeq.getOriginalHeader()) + 1
-        }
-  */      
-        partial5pStr = (partial5p == row) ? '<' : ''
-        partial3pStr = (partial3p == row) ? '>' : ''
+            idx5pNew = idx5p ? (idx5p + liftPosition + 1) : null
+            idx3pNew = idx3p ? (idx3p + liftPosition + 1) : null
+            String idx5pStr = idx5p ? idx5pNew : ""
+            String idx3pStr = idx3p ? idx3pNew : ""
+            if(row == "exon1") { // extend 5' through utr
+            idx5pStr = idx5pStart + liftPosition + 1
+            } else if(row == "exon9") { // extend 3' through utr
+            idx3pStr = idx3pEnd + liftPosition + 1
+            }
+            partial5pStr = (partial5p == row) ? '<' : ''
+            partial3pStr = (partial3p == row) ? '>' : ''
 
-        if(debugging <= 3) {
-            err.println "output: " + (partial5p == row)
-            err.println "output: partial5p=${partial5p}, partial5pStr=${partial5pStr}"
-            err.println "output: partial3p=${partial3p}, partial3pStr=${partial3pStr}"
-        }
-        
-        sectionStr = ""
-        if(first == true) { 
-            sectionStr = "\tmRNA"
-            first = false
-        }
-        writer.println  "${partial5pStr}${idx5pStr}\t${partial3pStr}${idx3pStr}" + sectionStr
-    } // each mRNA exon
-    writer.println "\t\t\tproduct\tkiller cell immunoglobulin-like receptor"
+            if(debugging <= 3) {
+                err.println "output: (partial5p == row)"
+                err.println "output: partial5p=${partial5p}, partial5pStr=${partial5pStr}"
+                err.println "output: partial3p=${partial3p}, partial3pStr=${partial3pStr}"
+            }
+            
+            sectionStr = ""
+            if(first == true) { 
+                sectionStr = "\tmRNA"
+                first = false
+            }
+            writer.println  "${partial5pStr}${idx5pStr}\t${partial3pStr}${idx3pStr}" + sectionStr
+        } // each mRNA exon
+        writer.println "\t\t\tproduct\tkiller cell immunoglobulin-like receptor"
+    } // pseudo
 
-    if(gene =~ /[23]DP1/) { // no CDS for pseudo genes
-        return
-    }
     // CDS
     first = true
     (1..9).each { exonIndex ->
@@ -441,8 +424,8 @@ def void output(DNASequence dnaSeq, String gene, String allele,
             err.println "output: CDS exonIndex=${exonIndex}"
         }
         String row = "exon" + exonIndex.toString()
-        idx5p = idxRNATable.get(row, "5p")
-        idx3p = idxRNATable.get(row, "3p")
+        idx5p = idxCDSTable.get(row, "5p")
+        idx3p = idxCDSTable.get(row, "3p")
         if((idx5p == null) && (idx3p == null)) {
             return // next exon
         }
@@ -458,7 +441,14 @@ def void output(DNASequence dnaSeq, String gene, String allele,
             sectionStr = "\tCDS"
             first = false
         }
+        if(gene =~ /[23]DP1/) { // exon for pseudo genes
+            sectionStr = "\texon"
+        }
+
         writer.println  "${partial5pStr}${idx5pStr}\t${partial3pStr}${idx3pStr}" + sectionStr
+        if(gene =~ /[23]DP1/) { // exon number for pseudo genes
+            writer.println "\t\t\tnumber\t${exonIndex}"
+        }
     } // each CDS exon
     writer.println "\t\t\tproduct\tkiller cell immunoglobulin-like receptor"
     writer.println "\t\t\ttransl_table\t1"
@@ -631,8 +621,8 @@ def ArrayList<String> getcDNAMatches(DNASequence cSeq, Map<String, String> ipdNu
  * @return List<String> aaSet and cdsSet containing ipd names that match
  */
 def List interpretIPD(String gene, DNASequence dnaSeq, ProteinSequence aaSeq,
-                      DNASequence cdsSeq,
-                      Map<String, String> ipdProtMap, Map<String, String> ipdNucMap) {
+                      DNASequence cdsSeq, Map<String, String> ipdProtMap,
+                      Map<String, String> ipdNucMap, Boolean verbose) {
     if(debugging <= 1) {
         err.println "interpretIPD(gene=${gene}, dnaSeq=${dnaSeq.getOriginalHeader()})"
     }
@@ -664,7 +654,7 @@ def List interpretIPD(String gene, DNASequence dnaSeq, ProteinSequence aaSeq,
                 err.println "interpretIPD: ipd seq=${seq}"
             }
             pCallSet.add(fullName)
-            // find the AUGUSTUS cDNA sequence
+            // find the cDNA sequence
             (ipdGeneRet, ccall, fullName) = getcDNAMatches(cdsSeq, ipdNucMap)
             if(ipdGeneRet != null) {
                 gene = ipdGeneRet
@@ -678,6 +668,7 @@ def List interpretIPD(String gene, DNASequence dnaSeq, ProteinSequence aaSeq,
 
     if(pCallSet.size() == 0) {
         pCallSet.add("${gene}*" + NEW_ALLELE)
+        
     }
     if(cCallSet.size() == 0) {
         cCallSet.add("${gene}*" + NEW_ALLELE)
@@ -1140,14 +1131,15 @@ def ArrayList<String> interpFullGene(String allele, String gene) {
  * 
  * @return List<String> best gene name and best allele name
  */
-def List<String> bestAllele(String gene, String gcall, String ccall, String pcall) {
+def List<String> bestAllele(String gene, String gcall, String ccall, String pcall,
+                            Boolean verbose) {
     // get best IPD-KIR call
     String bestGene = null
     String bestAllele = null
     String bestRes = null
-    gcall = gcall ? (gcall + " (full gene)") : ""
-    ccall = ccall ? (ccall + " (cDNA)") : ""
-    pcall = pcall ? (pcall + " (protein)") : ""
+    gcall += (verbose == true) ? " (full gene)" : ""
+    ccall += (verbose == true) ? " (cDNA)" : ""
+    pcall += (verbose == true) ? " (protein)" : ""
     if(!gcall.contains("NEW")) {
         bestAllele = gcall
         bestRes = "full gene"
@@ -1185,11 +1177,6 @@ def Boolean isTelomeric(String gene) {
 
 def String previousRow(String row, String gene) {
     Integer exonIndex = new Integer(row[-1])
-    String exonIndex2 = row[-2]
-    if(exonIndex2 == "1") { // 10
-        exonIndex = 10
-    }
-    err.println "previousRow: exonIndex=${exonIndex}"//todo
     exonIndex--
     if((gene.contains(/3DP1/) && (exonIndex == 2)) ||
        ((gene =~ /2DL[1-3]/) && (exonIndex == 3))  ||
@@ -1202,17 +1189,11 @@ def String previousRow(String row, String gene) {
        (gene.contains(/3DP1/) && (exonIndex >= 6))) { 
         exonIndex--
     }
-    ret = "exon" + exonIndex.toString()
-    err.println "previousRow: return=${ret}"//todo
-    return ret
+    return "exon" + exonIndex.toString()
 } // previousRow
 
 def String nextRow(String row, String gene) {
     Integer exonIndex = new Integer(row[-1])
-    String exonIndex2 = row[-2]
-    if(exonIndex2 == "1") { // 10
-        exonIndex = 10
-    }
     exonIndex++
     if((gene.contains(/3DP1/) && (exonIndex == 2)) ||
        ((gene =~ /2DL[1-3]/) && (exonIndex == 3))  ||
@@ -1245,25 +1226,6 @@ def Integer getFeatureStart(String desc) {
     return position
 } // getFeatureStart
 
-// MN167504_2DL2L3S3S4S5_23918-43868
-def Integer getFeatureEnd(String desc) {
-    if(debugging <= 3) {
-        err.println "getFeatureEnd(desc=${desc})"
-    }
-
-    // separate location
-    idx = desc.lastIndexOf('_')
-    posTmp = desc[idx+1..-1]
-    (start, endTmp) = posTmp.split('-')
-    Integer position = endTmp.toInteger()
-    if(debugging <= 1) {
-        err.println "getFeatureEnd: return ${position}"
-    }
-    return position
-} // getFeatureEnd
-
-
-
 /*
  * handleArgs
  * 
@@ -1284,6 +1246,8 @@ OptionAccessor handleArgs(String[] args) {
       required: true)
     cli.j(longOpt:'joints', args:1, argName:'joints', "input directory for files of joint sequences",
       required: true)
+    cli.v(longOpt:'verbose', args:1, argName:'verbose', "verbose output",
+      required: false)
     cli.o(longOpt:'out', args:1, argName:'output', 'output directory',
       required: true)
     OptionAccessor options = cli.parse(args)
