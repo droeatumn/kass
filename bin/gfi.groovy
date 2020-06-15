@@ -41,6 +41,7 @@ debugging = 3 // TRACE=1, WARN=2, DEBUG=3, INFO=4, ERROR=5
 @Field final Integer maxFeatureDistance = 10000 // 5000?
 @Field final String NOMEN_VER = "IPD-KIR 2.9.0"
 @Field final String NEW_ALLELE = "NEW"
+pseudoVerbose = false // output exons for pseudogenes
 
 // things that probably won't change per run
 err = System.err
@@ -142,6 +143,7 @@ List<String> joinFeatures(String gene, DNASequence dnaSeq,
     String shortenedProtein = null
     int idxStopProtein = -1
     ProteinSequence retAA = null
+    DNASequence retCDSSeq = null
     (0..10).each { exonIndex ->
         if(debugging <= 2) {
             err.println "joinFeatures: exonIndex=${exonIndex}"
@@ -353,7 +355,7 @@ def void output(DNASequence dnaSeq, String gene, String allele,
     // gene
     writer.println "${partial5pStr}${geneStart}\t${partial3pStr}${geneEnd}\tgene"
     writer.println "\t\t\tgene\t${gene}"
-    writer.print "\t\t\tallele\t${gene}*${allele}" + partialStr
+    writer.print "\t\t\tallele\t${gene}*${allele}"
     if(verbose == true) {
         writer.println partialStr
         writer.print "\t\t\tnote\tname checked as of ${NOMEN_VER}"
@@ -441,18 +443,25 @@ def void output(DNASequence dnaSeq, String gene, String allele,
             sectionStr = "\tCDS"
             first = false
         }
-        if(gene =~ /[23]DP1/) { // exon for pseudo genes
+        // exon for pseudo genes
+        if(gene =~ /[23]DP1/) {
             sectionStr = "\texon"
         }
 
-        writer.println  "${partial5pStr}${idx5pStr}\t${partial3pStr}${idx3pStr}" + sectionStr
-        if(gene =~ /[23]DP1/) { // exon number for pseudo genes
+        if(!(gene =~ /[23]DP1/) ||
+           ((gene =~ /[23]DP1/) && (pseudoVerbose == true))) {
+            writer.println  "${partial5pStr}${idx5pStr}\t${partial3pStr}${idx3pStr}" +
+                sectionStr
+        }
+        // exon number for pseudo genes
+        if((gene =~ /[23]DP1/) && (pseudoVerbose == true)) {
             writer.println "\t\t\tnumber\t${exonIndex}"
         }
     } // each CDS exon
-    writer.println "\t\t\tproduct\tkiller cell immunoglobulin-like receptor"
-    writer.println "\t\t\ttransl_table\t1"
-
+    if(!(gene =~ /[23]DP1/)) {
+        writer.println "\t\t\tproduct\tkiller cell immunoglobulin-like receptor"
+        writer.println "\t\t\ttransl_table\t1"
+    }
     if(debugging <= 1) {
         err.println "output: return"
     }
@@ -846,6 +855,11 @@ def Boolean sequenceEquals(org.biojava.nbio.core.sequence.template.Sequence a,
         err.println "sequenceEquals()"
     }
     Boolean ret = false
+    if((a == null) && (b == null)) {
+        return true
+    } else if(((a != null) && (b == null)) || ((a == null) && (b != null))) {
+        return false
+    }
     // augustus puts a '*' at the end of proteins
     astr = a.getSequenceAsString().replaceAll("\\*", "")
     bstr = b.getSequenceAsString().replaceAll("\\*", "")
