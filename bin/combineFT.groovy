@@ -32,7 +32,9 @@ loadFT(iReader, idPosFtTable)
 ArrayList<String> ids = idPosFtTable.rowKeySet()
 ArrayList<Integer> positions = idPosFtTable.columnKeySet().sort()
 if(debugging <= 3) {
-	err.println "${ids.size()} ids, ${positions.size} positions"
+	err.println "${ids.size()} ids: ${ids.join(',')}"
+    err.println "${positions.size()} positions: ${positions.join(',')}"
+    //err.println idPosFtTable.get("gb|GU182339", 78575)//todo
 }
 ids.each { i ->
     String featuresFull = new String()
