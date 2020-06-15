@@ -41,7 +41,7 @@ debugging = 3 // TRACE=1, WARN=2, DEBUG=3, INFO=4, ERROR=5
 @Field final Integer maxFeatureDistance = 10000 // 5000?
 @Field final String NOMEN_VER = "IPD-KIR 2.9.0"
 @Field final String NEW_ALLELE = "NEW"
-pseudoVerbose = false // output exons for pseudogenes
+pseudoVerbose = true // output exons for pseudogenes
 
 // things that probably won't change per run
 err = System.err
@@ -421,10 +421,12 @@ def void output(DNASequence dnaSeq, String gene, String allele,
 
     // CDS
     first = true
+    pseudoExonCount = 0
     (1..9).each { exonIndex ->
         if(debugging <= 2) {
             err.println "output: CDS exonIndex=${exonIndex}"
         }
+        pseudoExonCount++
         String row = "exon" + exonIndex.toString()
         idx5p = idxCDSTable.get(row, "5p")
         idx3p = idxCDSTable.get(row, "3p")
@@ -455,7 +457,7 @@ def void output(DNASequence dnaSeq, String gene, String allele,
         }
         // exon number for pseudo genes
         if((gene =~ /[23]DP1/) && (pseudoVerbose == true)) {
-            writer.println "\t\t\tnumber\t${exonIndex}"
+            writer.println "\t\t\tnumber\t${pseudoExonCount}"
         }
     } // each CDS exon
     if(!(gene =~ /[23]DP1/)) {
