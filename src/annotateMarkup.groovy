@@ -34,9 +34,8 @@
  *  BCDEFGHCIJKLMHCIRLMHCIJKLSCTUVWXYKLSCIJKLFZZZZZZGHCIJKLSCIJK
  *  241,6750,8644,...
  *
- * Multiple output files will be placed in provided folder. Each will be named the same as the input fasta file. It creates one output files for the markup, and one file per gene; label each seq with hap ID and location 
+ * Multiple output files will be placed in provided folder. Each will be named the same as the input fasta file. It creates one output files for the markup, and one feature sequence file per gene; label each seq with hap ID and location 
  * of the gene. (e.g., KP420442.1_3DP1_70186-77539)
- *
  * 
  * annotateMarkup.groovy -i <features definition file> -f <dna fasta file> -m <markup file> -o <output directory>
  * e.g., annotateMarkup.groovy -i ~/doc/kir/snp/15/15_probe_locations_v1_features.txt -f ../NC_000019.10.fasta -m ../NC_000019.10_markerHaps.txt -o output
@@ -123,10 +122,12 @@ HashBasedTable<String,String,ArrayList<String>> descGeneEndIndexTable = null
 	extractDNAFeaturesFromAll(descMarkupMap, descNomenMap, 
 							  nomenMarkupMap, faMap, locationsMap)
 
-if(debugging <= 2) {
+if(debugging <= 3) {
 	err.println "descriptions and genes in the desc/gene seq table"
 	err.println descGeneSeqTable.rowKeySet().join(", ")
 	err.println descGeneSeqTable.columnKeySet().join(", ")
+    //err.println "starts 2DL5: " + descGeneStartIndexTable.get("GU182339", "2DL5").join(',')//todo
+    //err.println "ends 2DL5: " + descGeneEndIndexTable.get("GU182339", "2DL5").join(',')//todo
 }
 // output
 writeOutput(options.o, options.f, descGeneSeqTable, descGeneStartIndexTable,
@@ -163,7 +164,6 @@ void writeOutput(String outDir, String fastaName,
 		}
 		outFastWriter = new PrintWriter(new File(outputFastaName).newOutputStream(), true)
 		rowSet.each { desc ->
-			//todo: have to make cell a list
 			seqs = descGeneSeqTable.get(desc, geneName)
 			seqs.eachWithIndex { seq, i ->
 				// add locations in the larger string
@@ -419,7 +419,7 @@ ArrayList extractDNA(String desc, String previousGeneNomen, String nomenStr,
 	Integer dnaEndIndex = dnaLocationsList[ie]
 	if(partial == true) {
 		if(geneNomen == "3DL3") {
-			dnaIndex = 0
+			dnaIndex = 0 // GU182340
 		} else if(geneNomen == "3DL1L2"){
 //            dnaIndex -= 5000 // not for MN167507
 			dnaEndIndex = dnaFasta.length() - 1
@@ -455,15 +455,20 @@ ArrayList extractDNA(String desc, String previousGeneNomen, String nomenStr,
         dnaIndex -= 200
     } else if(geneNomen == "2DP1") {
         dnaIndex -= 300
+    } else if(geneNomen == "3DL3") {
+        dnaIndex -= 3500 // GU182340
     }
-	if(debugging <= 2) {
-		err.println "extractDNA: dnaIndex=${dnaIndex}"
-		err.println "extractDNA: dnaEndIndex=${dnaEndIndex}"
-	}
+    if(dnaIndex < 0) {
+        dnaIndex = 0
+    }
 	dnaEndIndexStore = dnaEndIndex
 	if((dnaEndIndex == -1) || (dnaEndIndex > dnaFasta.length()-1)) {
 		dnaEndIndexStore = dnaFasta.length() - 1
         dnaEndIndex = dnaFasta.length() - 1
+	}
+	if(debugging <= 2) {
+		err.println "extractDNA: dnaIndex=${dnaIndex}"
+		err.println "extractDNA: dnaEndIndex=${dnaEndIndex}"
 	}
 	geneDNA = dnaFasta[dnaIndex..dnaEndIndex]
 	haplotypeLocus = geneToHaplotypeLocus(previousGeneNomen, nomenStr,
@@ -483,14 +488,11 @@ ArrayList extractDNA(String desc, String previousGeneNomen, String nomenStr,
     else {
 		if(debugging <= 4) {
 			err.println "extractDNA: multiple sequences for ${haplotypeLocus} in ${desc}"
-//            err.println "keeping the longer one"// todo: maybe not the best?
+            err.println "adding to the set"
 		}
 		seqList.add(geneDNA)
-		startList.add(dnaIndex)
-		endList.add(dnaEndIndexStore)
-		descGeneSeqTable.put(desc, haplotypeLocus, seqList)
-		    descGeneStartIndexTable.get(desc, haplotypeLocus).add(dnaIndex)
-		    descGeneEndIndexTable.get(desc, haplotypeLocus).add(dnaEndIndexStore)
+		descGeneStartIndexTable.get(desc, haplotypeLocus).add(dnaIndex)
+        descGeneEndIndexTable.get(desc, haplotypeLocus).add(dnaEndIndexStore)
 	}
 
 	if(debugging <= 2) {
@@ -500,6 +502,10 @@ ArrayList extractDNA(String desc, String previousGeneNomen, String nomenStr,
 			descGeneStartIndexTable.get(desc, haplotypeLocus)
 		err.println "extractDNA: end index(${desc}, ${haplotypeLocus})=" +
 			descGeneEndIndexTable.get(desc, haplotypeLocus)
+        if(descGeneStartIndexTable.get("GU182339", "2DL5") != null) { 
+            //err.println "starts 2DL5: " + descGeneStartIndexTable.get("GU182339", "2DL5").join(',')//todo
+            //err.println "ends 2DL5: " + descGeneEndIndexTable.get("GU182339", "2DL5").join(',')//todo
+        }
 	}
 	Integer length = dnaEndIndexStore - dnaIndex
 	if(length > 30000) {
