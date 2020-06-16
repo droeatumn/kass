@@ -41,7 +41,7 @@ debugging = 3 // TRACE=1, WARN=2, DEBUG=3, INFO=4, ERROR=5
 @Field final Integer maxFeatureDistance = 10000 // 5000?
 @Field final String NOMEN_VER = "IPD-KIR 2.9.0"
 @Field final String NEW_ALLELE = "NEW"
-pseudoVerbose = true // output exons for pseudogenes
+pseudoVerbose = false // output exons for pseudogenes
 
 // things that probably won't change per run
 err = System.err
@@ -365,9 +365,6 @@ def void output(DNASequence dnaSeq, String gene, String allele,
     if((partial5p != null) || (partial3p != null)) {
         writer.println "\t\t\tnote\tpartial"
     }
-    if(gene =~ /[23]DP/) {
-        writer.println "\t\t\tnote\tpseudogene=\"unprocessed\""    
-    }
 
     // mRNA
     if(!(gene =~ /[23]DP/)) {
@@ -463,6 +460,10 @@ def void output(DNASequence dnaSeq, String gene, String allele,
     if(!(gene =~ /[23]DP1/)) {
         writer.println "\t\t\tproduct\tkiller cell immunoglobulin-like receptor"
         writer.println "\t\t\ttransl_table\t1"
+    } else {
+        writer.println "\t\t\tgene_desc\tkiller cell immunoglobulin-like receptor"
+        writer.println "\t\t\tpseudo"
+        writer.println "\t\t\tpseudogene\tunprocessed"
     }
     if(debugging <= 1) {
         err.println "output: return"
