@@ -47,7 +47,7 @@ ids.each { i ->
     outName = i
 //    outName = i.replaceFirst(/gb\\|/, "")
     PrintWriter writer = new PrintWriter(new File("${outName}.ft.txt").newOutputStream(), true)
-    writer.println ">${i}"
+    writer.println ">Feature ${i}|"  // e.g., >Feature gb|MN167504|
     writer.println featuresFull
     writer.close()
 } // each contig
