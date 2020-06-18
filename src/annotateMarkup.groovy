@@ -67,9 +67,6 @@ nonGreedyPattern = '?'
 featureSeparator = "~"
 annotationExt = "_annotation.txt"
 featureFastaExt = "_features.fasta"
-// map: gene to approximate UTR sizes
-utr5Map = ['3DL3':320, '2DL3':268, '2DP1':267, '3DP1':267, '2DL1':268, '2DL4':267, '3DL1':267, '2DS4':267, '3DL2':268, '2DL2':300, '2DL5':547, '2DS1':268, '2DS2':300, '2DS3':300, '2DS5':268, '3DS1':267, '2DS2-2DS3':300]
-utr3Map = ['3DL3':561, '2DL3':510, '2DP1':510, '3DP1':9, '2DL1':510, '2DL4':407, '3DL1':510, '2DS4':624, '3DL2':485, '2DL2':510, '2DL5':415, '2DS1':624, '2DS2':624, '2DS3':645, '2DS5':645, '3DS1':679, '2DS2-2DS3':645]
 
 OptionAccessor options = handleArgs(args)
 
@@ -456,7 +453,7 @@ ArrayList extractDNA(String desc, String previousGeneNomen, String nomenStr,
     } else if(geneNomen == "2DP1") {
         dnaIndex -= 300
     } else if(geneNomen == "3DL3") {
-        dnaIndex -= 3500 // GU182340
+        dnaIndex -= 7000 // e.g., MN167506
     }
     if(dnaIndex < 0) {
         dnaIndex = 0
