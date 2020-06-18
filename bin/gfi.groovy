@@ -38,7 +38,7 @@ import com.google.common.collect.HashBasedTable
 
 // things that may change per run
 debugging = 3 // TRACE=1, WARN=2, DEBUG=3, INFO=4, ERROR=5
-@Field final Integer maxFeatureDistance = 10000 // 5000?
+@Field final Integer maxFeatureDistance = 11000 // MN167504 3DL3
 @Field final String NOMEN_VER = "IPD-KIR 2.9.0"
 @Field final String NEW_ALLELE = "NEW"
 pseudoVerbose = false // output exons for pseudogenes
@@ -285,6 +285,11 @@ def List<Integer> getGeneStartEnd(Table idxRNATable, Integer featureStart,
     Integer i = new Integer(0)
     while((i <= 10) && (retStart == null)) {
         retStart = idxRNATable.get("exon" + i.toString(), "5p")
+        // if 0 (UTR) is partial, set gene start to beginning of sequence
+        if((i == 0) && (retStart == null)) {
+            retStart = 0
+            break
+        }
         i++
     } // start
 
