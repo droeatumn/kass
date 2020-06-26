@@ -26,6 +26,7 @@
  *
  * 
  * @author Dave Roe
+ * @todo KP420437 3DL3 transl_table	2
  */
 import org.biojava.nbio.core.sequence.*
 import org.biojava.nbio.core.sequence.io.*
@@ -398,9 +399,13 @@ def void output(DNASequence dnaSeq, String gene, String allele,
             idx3pNew = idx3p ? (idx3p + featureStart + 1) : null
             String idx5pStr = idx5p ? idx5pNew : ""
             String idx3pStr = idx3p ? idx3pNew : ""
-            if(row == "exon1") { // extend 5' through utr
+            if(debugging <= 2) {
+                err.println "output: idx5pStr=${idx5pStr}, idx5pNew=${idx5pNew}"
+                err.println "output: idx3pStr=${idx3pStr}, idx3pNew=${idx3pNew}"
+            }
+            if((row == "exon1") || (idx5pStr == "")) { // extend 5' through utr
                 idx5pStr = idx5pStart + featureStart + 1
-            } else if(row == "exon9") { // extend 3' through utr
+            } else if((row == "exon9") || (idx3pStr == "")) { // extend 3' through utr
                 idx3pStr = idx3pEnd + featureStart + 1
             }
             partial5pStr = (partial5p == row) ? '<' : ''
