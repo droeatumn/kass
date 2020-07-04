@@ -32,10 +32,8 @@ import groovy.util.OptionAccessor
 import com.google.common.collect.Table
 import com.google.common.collect.HashBasedTable
 
-// full 52 character set (from ASCII?)
-//accessionList = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', 'a', 'b', 'c', 'd', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'z', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '+', '/']
-// 32+ from the 52 character set (from ASCII?)
-accessionList = ['A', 'N', 'O', 'P', 'Q', 'e', 'f', 'g', 'h', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '+', '/']
+// full 52 character set (from ASCII?
+accessionList = ['A', 'N', 'O', 'P', 'Q', 'e', 'f', 'g', 'h', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '+', '/', '!', '@', '$', '%', '^', '&', '(', ')', '-', '+', '|']
 // use these to normalize the direction of the markup
 // same direction as the sequences in GeneBank, etc.
 // todo: don't hard code this (how?)
@@ -183,11 +181,15 @@ void annotateReads(File samFile,
 			probePair = previousProbe + "-" + probe
 			Character probeAcc = getProbePairAcc(probeAccMap, probePair)
 			if(probeAcc == null) {
-				probeAcc = accessionList.remove(0)
+                if(accessionList.size() == 0) {
+                    probeAcc = '?' // todo; improve this
+                } else { 
+				    probeAcc = accessionList.remove(0)
+                }
 				probeAccMap[probePair] = probeAcc
 				if(debugging <= 5) { 
 					err.println "$location $probePair = $probeAcc"
-					err.println "adding to accessionList: " + accessionList.join(",")
+					err.println "adding from accessionList: " + probeAcc
 				}
 			}
 			if(debugging <= 2) {
