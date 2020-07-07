@@ -19,8 +19,12 @@ params.raw = "/opt/kass/raw"
 params.output = home + "/output"
 output = params.output + "/"
 params.reference = ""
-// for fastq, use --bwa "-xpacbio"
+// for raw fastq, use --bwa "-xpacbio" (todo: how to run on command line?)
+// for exact haplotype references, use this
+// but be aware: susceptible to soft clipping
 params.bwa = "-k1800 -W9000 -r10 -A1 -B100 -O40 -E40 -L50"
+// for inexact haplotype references, use this
+//params.bwa = "-k800 -W2000 -r10 -B50 -O20 -E20 -L40"
 params.bowtie = "--end-to-end -N0"
 params.threads = "7"
 params.container = "droeatumn/kass:latest"
