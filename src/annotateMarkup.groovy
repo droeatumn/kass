@@ -48,6 +48,7 @@
  * to make the annotation for the full markup string.
  *
  * @author Dave Roe
+ * @todo check that the sequence names are unique
  */
 
 import groovy.io.*
@@ -386,7 +387,7 @@ ArrayList extractDNA(String desc, String previousGeneNomen, String nomenStr,
 	Matcher matcher = pattern.matcher(workingMarkup)
 	boolean found = matcher.find()
 	if(debugging <= 2) { 
-		err.println "extractDNA: found=${found}"
+		err.println "extractDNA: found=${found}, matcher=${matcher}"
 	}
 	if(found == false) {
 		if(debugging <= 1) {
@@ -423,7 +424,11 @@ ArrayList extractDNA(String desc, String previousGeneNomen, String nomenStr,
 		} else if(geneNomen == "3DL2") {
 			dnaIndex -= 5000
 		}
-	} else if(geneNomen == "2DL5") {
+	} else if(geneNomen == "2DL4") {
+        // needs more padding on proximal(centromeric) end
+        // KU645196
+        dnaIndex -= 3000
+    } else if(geneNomen == "2DL5") {
         // needs more padding on proximal(centromeric) end
         dnaIndex -= 3500
     } else if(geneNomen == "3DL1S1") {
@@ -440,7 +445,7 @@ ArrayList extractDNA(String desc, String previousGeneNomen, String nomenStr,
         dnaIndex -= 5000
         dnaEndIndex += dnaFasta.length() - 1
     } else if(geneNomen == "3DP1") {
-        dnaIndex -= 300
+        dnaIndex -= 2500 // KP420446
         // needs more padding on distal(telomeric) end
         dnaEndIndex += 2000
     } else if((geneNomen == "2DL2L3S3S4S5") || (geneNomen == "2DS4") 
@@ -467,6 +472,7 @@ ArrayList extractDNA(String desc, String previousGeneNomen, String nomenStr,
 		err.println "extractDNA: dnaIndex=${dnaIndex}"
 		err.println "extractDNA: dnaEndIndex=${dnaEndIndex}"
 	}
+    // left off
 	geneDNA = dnaFasta[dnaIndex..dnaEndIndex]
 	haplotypeLocus = geneToHaplotypeLocus(previousGeneNomen, nomenStr,
 										  geneNomen)
