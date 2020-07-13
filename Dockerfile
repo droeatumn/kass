@@ -52,7 +52,7 @@ RUN cd /opt \
   && cd guava/guava \
   && mvn install
 
-# kpi
+# kass
 #RUN cd /opt && git clone https://github.com/droeatumn/kass.git
 RUN mkdir -p /opt/kass/input /opt/kass/output /opt/kass/bin /opt/kass/work /opt/kass/src
 # todo: remove the 'add' when switching to git
