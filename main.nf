@@ -6,6 +6,7 @@
  * Requires 'docker.enabled = true' in Nexflow configuration (e.g., $HOME/.nextflow/config).
  * 
  * @author Dave Roe
+ * @todo make the contig names unique
  * @todo --resume isn't working
  */
 
@@ -48,7 +49,7 @@ process extract {
     if(params.nocontainer == "null") { 
         container = params.container
     }
-    publishDir output, mode: 'copy', overwrite: true
+//    publishDir output, mode: 'copy', overwrite: true
 //doesn't work    publishDir "*_off-kir.fastq.gz", mode: 'copy', overwrite: true
 //doesn't work    publishDir "*_kir.fastq", mode: 'copy', overwrite: true
     input:
