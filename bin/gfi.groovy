@@ -52,7 +52,9 @@ File ipdDir, gffFile, outFile
 OptionAccessor options = handleArgs(args)
 String jointFileDir = options.j
 String gene = options.g
-err.println "options.v=" + options.v//todo
+if(debugging <= 1) {
+    err.println "gene=${gene}, loading joints from ${jointFileDir}"
+}
 Boolean verbose = ((options.v != null) && (options.v != false)) ? true : false
 
 Map<String,String> ipdProtMap // per gene
