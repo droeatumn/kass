@@ -3,7 +3,7 @@ main.nf assembles KIR haplotypes from PacBio HiFi reads.<br>
 annotate.nf annotates the structure of assembled contigs<br>
 align.nf aligns and reports on the raw or assembled sequences.
 
-<h2>Dependancies</h2>
+<h2>Dependencies</h2>
 Install Java, Groovy, Nextflow, Docker, and Git.
 Create accounts in GitHub and Docker Hub.
 Add 'docker.enabled = true' and 'docker.fixOwnership = true' to your Nexflow
