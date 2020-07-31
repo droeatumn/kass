@@ -42,7 +42,10 @@ RUN cd /opt  && mkdir -p /opt/bin \
   && chmod 750 /opt/FastQC/fastqc 
 #  && wget https://sourceforge.net/projects/quast/files/quast-5.0.2.tar.gz \
 #  && tar -zxvf quast-5.0.2.tar.gz && cd quast-5.0.2 && ./setup.py install && cd .. \
-#  && rm quast-5.0.2.tar.gz
+#  && rm quast-5.0.2.tar.gz \
+  && wget https://github.com/lh3/minimap2/releases/download/v2.17/minimap2-2.17_x64-linux.tar.bz2 \
+  && bunzip2 minimap2-2.17_x64-linux.tar.bz2 \
+  && tar -xvf minimap2-2.17_x64-linux.tar
 
 RUN pip3 install --upgrade NanoPlot
 
@@ -86,6 +89,8 @@ ENV PATH /opt/bbmap:$PATH
 ENV PATH /opt/canu-2.0/Linux-amd64/bin:$PATH
 ENV PATH /opt/FastQC:$PATH
 ENV PATH /root/miniconda2/bin:$PATH
+ENV PATH /opt/minimap2-2.17_x64-linux:$PATH
+
 # docker
 ENV TMPDIR=/opt/kass/work
 ENV TMP=/opt/kass/work
