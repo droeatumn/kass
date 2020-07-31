@@ -6,6 +6,7 @@
  * @author Dave Roe
  * @todo handle gzipped input
  * @todo standardize "KIR" in the output
+ * @todo remove the bar in the ft output
  */
 
 params.home = baseDir
@@ -64,7 +65,7 @@ process orient {
         gunzip -f ${r}
     fi
     orient.groovy -i ${rootName} -p ${markerFile} -o tmp.fasta
-    reformat.sh in=tmp.fasta out=${s}-orient.fasta fastawrap=1000000 overwrite=true
+    reformat.sh in=tmp.fasta out=${s}-orient.fasta overwrite=true
     """
 } // orient
 
