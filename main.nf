@@ -56,7 +56,7 @@ process extract {
         tuple s, path(fa) from fqs
         path(markerCapFile)
     output:
-	    tuple s, file{"*_kir.fastq"} into kirFastqs
+        tuple s, file{"*_kir.fastq.gz"} into kirFastqs
         tuple s, file{"*_off-kir.fastq.gz"} into offkirFastqs optional true
 
     script:
@@ -67,7 +67,7 @@ process extract {
             offStr = "out="  + offFile
         }
     """
-    bbduk.sh in=${fa} ${offStr} outm=${s}_kir.fastq ref=${markerCapFile} k=25 maskmiddle=f overwrite=t rename=t nzo=t rcomp=t ignorebadquality=t
+    bbduk.sh in=${fa} ${offStr} outm=${s}_kir.fastq.gz ref=${markerCapFile} k=25 maskmiddle=f overwrite=t rename=t nzo=t rcomp=t ignorebadquality=t
     # remove empty files
     find . -type f -size 0 -print0 |xargs -0 rm -f
 
