@@ -26,8 +26,8 @@ RUN cd /opt  && mkdir -p /opt/bin \
   && wget https://github.com/refresh-bio/KMC/releases/download/v3.1.1/KMC3.1.1.linux.tar.gz \
   && gunzip KMC3.1.1.linux.tar.gz && tar -xvf KMC3.1.1.linux.tar && rm -f KMC3.1.1.linux.tar \  
   && cd /opt && wget https://github.com/marbl/canu/releases/download/v2.0/canu-2.0.Linux-amd64.tar.xz && tar -xJf canu-2.0.*.tar.xz && rm canu-2.0*.xz \
-#  && cd /opt && wget https://gite.lirmm.fr/lorma/lorma-releases/uploads/219b51b0d8d6ce378650743dc5f09024/lorma-bin_0.5_linux64.tar.gz \
-#  && gunzip lorma-bin_0.5_linux64.tar.gz && tar -xvf lorma-bin_0.5_linux64.tar && rm lorma-bin_0.5_linux64.tar \
+  && cd /opt && wget https://gite.lirmm.fr/lorma/lorma-releases/uploads/219b51b0d8d6ce378650743dc5f09024/lorma-bin_0.5_linux64.tar.gz \
+  && gunzip lorma-bin_0.5_linux64.tar.gz && tar -xvf lorma-bin_0.5_linux64.tar && rm lorma-bin_0.5_linux64.tar \
   && cd /opt && wget https://gite.lirmm.fr/lordec/lordec-releases/uploads/710113d83c210b6989ccfbdbafa89234/lordec-bin_0.9_linux64.tar.bz2 \
   && bunzip2 lordec-bin_0.9_linux64.tar.bz2 && tar -xvf lordec-bin_0.9_linux64.tar && rm lordec-bin_0.9_linux64.tar \
   && cd /opt && wget https://github.com/samtools/samtools/releases/download/1.10/samtools-1.10.tar.bz2 \
@@ -68,21 +68,9 @@ ENV CLASSPATH /opt/kass/bin/jars/biojava-alignment-5.4.0.jar:/opt/kass/bin/jars/
 ENV CLASSPATH /opt/guava/guava/target/guava-HEAD-jre-SNAPSHOT.jar:/opt/jars/commons-math3-3.6.1/commons-math3-3.6.1.jar:$CLASSPATH
 ENV CLASSPATH /opt/jars/guava-21.0.jar:$CLASSPATH
 
-# stringsearchalgorithms
-RUN cd /opt \
-  && wget https://github.com/almondtools/stringsearchalgorithms/archive/stringsearchalgorithms-0.4.3.tar.gz \
-  && gunzip stringsearchalgorithms-0.4.3.tar.gz \
-  && tar -xvf stringsearchalgorithms-0.4.3.tar \
-  && rm stringsearchalgorithms-0.4.3.tar \
-  && cd stringsearchalgorithms-stringsearchalgorithms-0.4.3 \
-  && mvn compile \
-  && mvn package \
-  && mv target/stringsearchalgorithms-0.4.3.jar /opt/kass/bin/jars/
-
 # environment variables
 ENV PATH /opt/bin:$PATH
-#ENV PATH /opt/lorma-bin_0.5_linux64:$PATH
-ENV PATH /opt/kass/bin/lorma-bin_0.5_linux64:$PATH
+ENV PATH /opt/lorma-bin_0.5_linux64:$PATH
 ENV PATH /opt/lordec-bin_0.9_linux64:$PATH
 ENV PATH /opt/bowtie2-2.3.5.1-linux-x86_64:$PATH
 ENV PATH /opt/qualimap_v2.2.1:$PATH
