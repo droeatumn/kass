@@ -17,6 +17,7 @@ params.output = home + "/output"
 output = params.output + "/"
 params.bowtie = "-a --end-to-end --rdg 3,3 --rfg 3,3"
 params.threads = "28"
+params.maxMem = "200G"
 params.container = "droeatumn/kass:latest"
 params.nocontainer = "null"
 params.sbt = null
@@ -65,7 +66,7 @@ process orient {
         gunzip -f ${r}
     fi
     orient.groovy -i ${rootName} -p ${markerFile} -o tmp.fasta
-    reformat.sh in=tmp.fasta out=${s}-orient.fasta overwrite=true
+    reformat.sh -Xmx${params.maxMem} in=tmp.fasta out=${s}-orient.fasta overwrite=true
     """
 } // orient
 
