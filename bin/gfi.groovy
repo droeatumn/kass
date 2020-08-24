@@ -28,6 +28,7 @@
  * 
  * @author Dave Roe
  * @todo KP420437 3DL3 transl_table	2
+ * @todo find(): it would be better to prioritize joints by (fewest) mismatches
  */
 import org.biojava.nbio.alignment.*
 import org.biojava.nbio.core.alignment.matrices.* // SimpleSubstitutionMatrix and Nuc4_4
@@ -224,8 +225,8 @@ List<String> joinFeatures(String gene, DNASequence dnaSeq,
             err.println "joinFeatures: idx5p=${idx5p}, idx3p=${idx3p}, partial5p=${partial5p}, partial3p=${partial3p}"
             err.println "joinFeatures: retCDS=${retCDS}"
             err.println "joinFeatures: dnaStr length=${dnaStr.length()}"
-            err.println "joinFeatures: dnaStr[${idx5p}..${idx3p}]=${dnaStr[idx5p..idx3p]}"
-            err.println "joinFeatures: len=${idx3p-idx5p+1}, tmpCDS=${retCDS + dnaStr[idx5p..idx3p]}"
+//            err.println "joinFeatures: dnaStr[${idx5p}..${idx3p}]=${dnaStr[idx5p..idx3p]}"
+//            err.println "joinFeatures: len=${idx3p-idx5p+1}, tmpCDS=${retCDS + dnaStr[idx5p..idx3p]}"
         }
 
         // before adding the new full exon, translate to AA to check for
@@ -543,6 +544,9 @@ def void interpret(DNASequence dnaSeq, String gene,
 
             // only search toward the 3p direction
             // shorten the string with every find
+            if(lastIdx >= dnaStr.length()) {
+                return
+            }
             Integer idx = find(dnaStr[lastIdx..-1], queryList, side, matrix)
             if(idx >= 0) { 
                 if(debugging <= 3) {
@@ -600,20 +604,21 @@ int find(String target, ArrayList<String> queryList, String side,
     targetDNA = new DNASequence(target)
 
     // loop through each joint sequences
+    // it would be better to prioritize by (fewest) mismatches (todo)
     for(Iterator qiter = queryList.iterator(); qiter.hasNext();) {
         DNASequence queryDNA = qiter.next()
         
         diffList = countDiffs(queryDNA, targetDNA, matrix)
         mismatchCount = diffList[0]
-        ret = diffList[1]
-        if(side == "5p") { // start of the feature
-                ret++
-            }
         if(debugging <= 3) {
             err.println "find: mismatchCount=${mismatchCount}, ret=${ret}"
         }
         
         if(mismatchCount <= maxJointEditDistance) {
+            ret = diffList[1]
+            if(side == "5p") { // start of the feature
+                ret++
+            }
             break
         }
     } // each query sequence
