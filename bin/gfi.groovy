@@ -236,7 +236,7 @@ List<String> joinFeatures(String gene, DNASequence dnaSeq,
             idxCDS3p = idx3p
             // test adding the full new exon
             String testStr = retCDS.toString() + dnaStr[idxCDS5p..idxCDS3p]
-            DNASequence testCDSSeq = new DNASequence(testStr)
+            DNASequence testCDSSeq = new DNASequence(testStr, new AmbiguityDNACompoundSet())
             // covert to protein
             if(debugging <= 1) {
                 err.println "joinFeatures: translating ${testCDSSeq}"
@@ -268,12 +268,14 @@ List<String> joinFeatures(String gene, DNASequence dnaSeq,
                         err.println "joinFeatures: found stop codon, idxStopProtein=${idxStopProtein}, idxCDS5p=${idxCDS5p}, idxCDS3p=${idxCDS3p}, len=${idxCDS3p-idxCDS5p}, ${retAAStr}"
                     }
                     retAA = new ProteinSequence(retAAStr[0..idxStopProtein-1])
-                    retCDSSeq = new DNASequence(dnaStr[idxCDS5p..idxCDS3p])
+                    retCDSSeq = new DNASequence(dnaStr[idxCDS5p..idxCDS3p],
+                                                new AmbiguityDNACompoundSet())
                 }
             }
             idxCDSTable.put(row, "5p", idxCDS5p)
             idxCDSTable.put(row, "3p", idxCDS3p)
-            retCDSSeq = new DNASequence(retCDS.append(dnaStr[idxCDS5p..idxCDS3p]).toString())
+            retCDSSeq = new DNASequence(retCDS.append(dnaStr[idxCDS5p..idxCDS3p]).toString(),
+                                        new AmbiguityDNACompoundSet())
         }
     } // each exon
 
@@ -601,7 +603,7 @@ int find(String target, ArrayList<String> queryList, String side,
     if(target.length() > maxFeatureDistance) {
         target = target[0..maxFeatureDistance]
     }
-    targetDNA = new DNASequence(target)
+    targetDNA = new DNASequence(target, new AmbiguityDNACompoundSet())
 
     // loop through each joint sequences
     // it would be better to prioritize by (fewest) mismatches (todo)
@@ -881,7 +883,7 @@ HashBasedTable<String,String,ArrayList<DNASequence>> loadJoints(String dir,
                 err.println "ERROR: joint sequence has uneven length: ${lineT}, ${f}"
                 System.exit(1)
             }
-            seqList.add(new DNASequence(lineT))
+            seqList.add(new DNASequence(lineT, new AmbiguityDNACompoundSet()))
         } // each line
         if(debugging <= 3) {
             err.println "loadJoints: adding ${exonStr}, ${sideStr} = ${seqList.size()} sequences"
