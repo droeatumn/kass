@@ -39,7 +39,7 @@ RUN cd /opt  && mkdir -p /opt/bin \
   && unzip qualimap_v2.2.1.zip && rm qualimap_v2.2.1.zip \
   && cd /opt && wget http://www.bioinformatics.babraham.ac.uk/projects/fastqc/fastqc_v0.11.9.zip \
   && unzip fastqc_v0.11.9.zip && rm fastqc_v0.11.9.zip \
-  && chmod 750 /opt/FastQC/fastqc 
+  && chmod 750 /opt/FastQC/fastqc \
 #  && wget https://sourceforge.net/projects/quast/files/quast-5.0.2.tar.gz \
 #  && tar -zxvf quast-5.0.2.tar.gz && cd quast-5.0.2 && ./setup.py install && cd .. \
 #  && rm quast-5.0.2.tar.gz \
@@ -63,7 +63,8 @@ ADD *.nf /opt/kass/
 ADD input /opt/kass/input/
 ADD bin /opt/kass/bin/
 ADD src /opt/kass/src/
-ENV CLASSPATH /opt/kass/bin/jars/slf4j-api-1.7.5.jar:/opt/kass/bin/jars/biojava4-core.jar:/opt/kass/bin/jars/dsh-commandline-1.1.jar:/opt/kass/bin/jars/super-csv.jar:/opt/kass/bin/jars/stringsearchalgorithms-0.4.3.jar:$CLASSPATH
+ENV CLASSPATH /opt/kass/bin/jars/slf4j-api-1.7.5.jar:/opt/kass/bin/jars/dsh-commandline-1.1.jar:/opt/kass/bin/jars/super-csv.jar:$CLASSPATH
+ENV CLASSPATH /opt/kass/bin/jars/biojava-alignment-5.4.0.jar:/opt/kass/bin/jars/biojava-core-5.4.0.jar:$CLASSPATH
 ENV CLASSPATH /opt/guava/guava/target/guava-HEAD-jre-SNAPSHOT.jar:/opt/jars/commons-math3-3.6.1/commons-math3-3.6.1.jar:$CLASSPATH
 ENV CLASSPATH /opt/jars/guava-21.0.jar:$CLASSPATH
 
