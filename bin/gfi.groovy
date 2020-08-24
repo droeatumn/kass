@@ -21,16 +21,21 @@
  *
  * Output is one table format (.tbl) as used by GenBank, etc. for each sequence.
  *
- * Requires biojava4 or later and guava.
- *   e.g., export CLASSPATH=$HOME/bin/jars/biojava4-core.jar:$CLASSPATH
- *
+ * Requires biojava5 (or later) and guava.
+ *   e.g., export CLASSPATH=$HOME/bin/jars/biojava-core.jar:$CLASSPATH
+ *   e.g., export CLASSPATH=$HOME/bin/jars/biojava-alignment.jar:$CLASSPATH
+ * Uses biojava local alignment, penalty of 10 for mismatch and 1 for gap.
  * 
  * @author Dave Roe
  * @todo KP420437 3DL3 transl_table	2
  */
+import org.biojava.nbio.alignment.*
+import org.biojava.nbio.core.alignment.matrices.* // SimpleSubstitutionMatrix and Nuc4_4
+import org.biojava.nbio.core.alignment.template.*
+import org.biojava.nbio.core.sequence.compound.*
 import org.biojava.nbio.core.sequence.*
 import org.biojava.nbio.core.sequence.io.*
-import org.biojava.nbio.core.sequence.compound.*
+import org.biojava.nbio.core.sequence.template.Sequence
 import org.biojava.nbio.core.sequence.transcription.*
 
 import groovy.transform.Field
@@ -40,8 +45,10 @@ import com.google.common.collect.HashBasedTable
 // things that may change per run
 debugging = 3 // TRACE=1, WARN=2, DEBUG=3, INFO=4, ERROR=5
 @Field final Integer maxFeatureDistance = 11000 // MN167504 3DL3
+@Field final Integer maxJointEditDistance = 3
 @Field final String NOMEN_VER = "IPD-KIR 2.9.0"
 @Field final String NEW_ALLELE = "NEW"
+
 pseudoVerbose = false // output exons for pseudogenes
 
 // things that probably won't change per run
@@ -67,6 +74,8 @@ Map<String,String> ipdGeneMap
 HashBasedTable<String,String,ArrayList<DNASequence>> jointTable = null
 jointTable = loadJoints(jointFileDir, gene, fileSeparator)
 
+SubstitutionMatrix<NucleotideCompound> matrix = SubstitutionMatrixHelper.getNuc4_4()
+
 // descSeqMap: description -> DNASequence unmodified from fasta file
 fFile = new File(options.f)
 FastaReader<DNASequence, NucleotideCompound> parentReader = new FastaReader<DNASequence, NucleotideCompound>(fFile, new PlainFastaHeaderParser<DNASequence, NucleotideCompound>(), new DNASequenceCreator(AmbiguityDNACompoundSet.getDNACompoundSet()))
@@ -84,7 +93,7 @@ descSeqMap.each { desc, dnaSeq ->
     // e.g., 2DL1S1S2, exon4_3p -> 1227
     HashBasedTable<String,String,Integer> idxRNATable =  HashBasedTable.create()
 
-    interpret(dnaSeq, gene, jointTable, idxRNATable)
+    interpret(dnaSeq, gene, jointTable, idxRNATable, matrix)
     ArrayList<String> exonsList = idxRNATable.rowKeySet()
     ArrayList<String> sidesList = idxRNATable.columnKeySet().sort()
     if(debugging <= 3) { 
@@ -135,7 +144,7 @@ List<String> joinFeatures(String gene, DNASequence dnaSeq,
     }
     // Initialize the Transcription Engine
     TranscriptionEngine engine = 
-        new TranscriptionEngine.Builder().dnaCompounds(AmbiguityDNACompoundSet.getDNACompoundSet()).rnaCompounds(AmbiguityRNACompoundSet.getDNACompoundSet()).build()
+        new TranscriptionEngine.Builder().dnaCompounds(AmbiguityDNACompoundSet.getDNACompoundSet()).rnaCompounds(AmbiguityRNACompoundSet.getRNACompoundSet()).build()
 
     HashBasedTable<String,String,Integer> idxCDSTable =  HashBasedTable.create()
     
@@ -228,7 +237,9 @@ List<String> joinFeatures(String gene, DNASequence dnaSeq,
             String testStr = retCDS.toString() + dnaStr[idxCDS5p..idxCDS3p]
             DNASequence testCDSSeq = new DNASequence(testStr)
             // covert to protein
-            //err.println "joinFeatures: translating ${testCDSSeq}"//todo
+            if(debugging <= 1) {
+                err.println "joinFeatures: translating ${testCDSSeq}"
+            }
             retAA = engine.translate(testCDSSeq)
             retAAStr = retAA.getSequenceAsString()
             if(debugging <= 2) {
@@ -494,18 +505,22 @@ def void output(DNASequence dnaSeq, String gene, String allele,
  * @param dnaSeq DNASequence to be interpreted
  * @param gene String name of the gene to which the sequence belongs
  * @param jointTable Table of joint sequences (exon, side) -> List<DNASequences>
+ * @param matrix SubstitutionMatrix for ambiguous nucleotides
  * @param idxRNATable Table of joint sequences (exon, side) -> 0-based index
  */
 def void interpret(DNASequence dnaSeq, String gene, 
                    HashBasedTable<String,String,ArrayList<DNASequence>> jointTable,
-                   HashBasedTable<String,String,Integer> idxRNATable) {
+                   HashBasedTable<String,String,Integer> idxRNATable,
+                   SubstitutionMatrix matrix) {
     if(debugging <= 1) {
         err.println "interpret(${dnaSeq.getOriginalHeader()}, ${gene})"
         err.println "interpret: dnaSeq length=${dnaSeq.getLength()}"
     }
 
     dnaStr = dnaSeq.getSequenceAsString()
-    //err.println dnaStr //todo
+    if(debugging <= 1) {    
+        err.println dnaStr
+    }
     Integer lastIdx = 0
     (0..10).each { exonIndex ->
         if(debugging <= 2) {
@@ -528,7 +543,7 @@ def void interpret(DNASequence dnaSeq, String gene,
 
             // only search toward the 3p direction
             // shorten the string with every find
-            Integer idx = find(dnaStr[lastIdx..-1], queryList, side)
+            Integer idx = find(dnaStr[lastIdx..-1], queryList, side, matrix)
             if(idx >= 0) { 
                 if(debugging <= 3) {
                     err.println "interpret: found exon${exonIndex}, ${side} for ${dnaSeq.getOriginalHeader()}: idx(len-1)=$idx"
@@ -562,42 +577,43 @@ def void interpret(DNASequence dnaSeq, String gene,
  * Finds one of the query sequences in the target and returns the 0-based index
  * _of the junction point_.
  * Assumes features cannot be more than maxFeatureDistance bp away.
+ * Checks for exact matches first, and then up to maxJointEditDistance differences.
  *
  * @param String target sequence
  * @param String query sequence
  * @param String side 5p or 3p
- * @return int of the 0-based index, or < 0 if none found
+ * @param SubstitutionMatrix a matrix with (mis)match scores for aligment
+ * @return int of the 0-based index of the 5' start of the junction, or < 0 if none found
  */
-int find(String target, ArrayList<String> queryList, String side) {
+int find(String target, ArrayList<String> queryList, String side,
+         SubstitutionMatrix matrix) {
     if(debugging <= 1) {
         err.println "find(target=${target}, side=${side})"
     }
     int ret = -1
-    targetLen = target.length()
 
+    // assume feature cannot be more than maxFeatureDistance bp away
+    end = maxFeatureDistance
+    if(target.length() > maxFeatureDistance) {
+        target = target[0..maxFeatureDistance]
+    }
+    targetDNA = new DNASequence(target)
+
+    // loop through each joint sequences
     for(Iterator qiter = queryList.iterator(); qiter.hasNext();) {
-        DNASequence query = qiter.next()
-        queryStr = query.getSequenceAsString()
-        queryLen = queryStr.length()
-        // assume feature cannot be more than maxFeatureDistance bp away
-        end = maxFeatureDistance
-        if(targetLen - 1 < maxFeatureDistance) {
-            end = targetLen - 1
-        }
-        ret = target[0..end].toUpperCase().indexOf(queryStr.toUpperCase())
+        DNASequence queryDNA = qiter.next()
+        
+        diffList = countDiffs(queryDNA, targetDNA, matrix)
+        mismatchCount = diffList[0]
+        ret = diffList[1]
+        if(side == "5p") { // start of the feature
+                ret++
+            }
         if(debugging <= 3) {
-            err.println "targetLen=${targetLen}, end=${end}"
-            err.println "find: ${queryStr} returned ${ret}"
+            err.println "find: mismatchCount=${mismatchCount}, ret=${ret}"
         }
-        if(ret >= 0) {
-            // count from intron side when switching to inexact matches (todo)
-            ret += queryLen/2 // 5p: start of the feature
-            if(side == "3p") { // end of the feature
-                ret--
-            }
-            if(debugging <= 3) {
-                err.println "find: set ${queryStr} to ${ret}"
-            }
+        
+        if(mismatchCount <= maxJointEditDistance) {
             break
         }
     } // each query sequence
@@ -607,6 +623,59 @@ int find(String target, ArrayList<String> queryList, String side) {
     }
     return ret
 } // find
+
+/*
+ * countDiffs
+ * Aligns the query to the target and counts the number of differences where they align.
+ * 
+ * @param queryDNA DNASequence containing the feature being annotated
+ * @param targetDNA DNASequence containing the joint sequence to use for annotation
+ * @param matrix SubstitutionMatrix (mis)match scores for Nucleotides
+ * @return Array<Integer> list with a count of the differences and the 5' part of the junction (-1 if not found)
+ */
+def ArrayList<Integer> countDiffs(DNASequence queryDNA, DNASequence targetDNA,
+                                  SubstitutionMatrix matrix) {
+    ArrayList<Integer> retList = new ArrayList<Integer>()
+    
+    Integer mismatchesCount = 0
+    Integer queryLen = queryDNA.getLength()
+    Integer queryHalfLen = Math.floor(queryLen/2)
+    targetLen = targetDNA.getLength()
+    SequencePair<DNASequence, NucleotideCompound> pair = 
+        Alignments.getPairwiseAlignment(queryDNA, targetDNA,
+                                        Alignments.PairwiseSequenceAlignerType.GLOBAL, 
+                                        new SimpleGapPenalty((short)10, (short)10), 
+                                        matrix);
+    jointAlnStr = pair.getQuery().getSequenceAsString()
+    targetAlnStr = pair.getTarget().getSequenceAsString()
+    // skip past the leading gaps '-'; find index of first DNA
+    ji = jointAlnStr.findIndexOf{ it ==~ /[ACGTNacgtn]/ }
+    je = jointAlnStr.findLastIndexOf{ it ==~ /[ACGTNacgtn]/ }
+    jointCharCount = 0
+    startJunctionIndex = -1
+    (ji..je).each { i ->
+        if(jointAlnStr[i] != targetAlnStr[i]) {
+            mismatchesCount++
+        }
+        if(jointAlnStr[i] != '-') {
+            jointCharCount++
+            if(jointCharCount == queryHalfLen) {
+                startJunctionIndex = i
+            }
+        }
+    }
+    if(debugging <= 3) {
+        err.println "queryHalfLen=${queryHalfLen}"
+        err.println "jointAlnStr=${jointAlnStr[ji..je]}"
+        err.println "targetAlnStr=${targetAlnStr[ji..je]}"
+        err.println "ji=${ji}, je=${je}"
+        err.println "mismatchesCount=${mismatchesCount}, startJunctionIndex=${startJunctionIndex}"
+    }
+    retList.add(mismatchesCount)
+    retList.add(startJunctionIndex)
+
+    return retList
+} // countDiffs
 
 /* 
  * Checks a sequence to see if it matches an ipd-kir 'nuc' sequence.
@@ -1309,20 +1378,20 @@ def Integer getFeatureEnd(String desc) {
  */
 OptionAccessor handleArgs(String[] args) { 
     CliBuilder cli = new CliBuilder(usage:'gfi.groovy [options] ',
-      header:'Options:')
+                                    header:'Options:')
     cli.help('print this message')
     cli.i(longOpt:'ipd', args:1, argName:'ipd', 'input IPD directory',
-      required: true)
+          required: true)
     cli.f(longOpt:'fasta', args:1, argName:'fasta', 'input fasta file',
-      required: true)
+          required: true)
     cli.g(longOpt:'gene', args:1, argName:'gene', "gene name (e.g., 'KIR2DL4')",
-      required: true)
+          required: true)
     cli.j(longOpt:'joints', args:1, argName:'joints', "input directory for files of joint sequences",
-      required: true)
+          required: true)
     cli.v(longOpt:'verbose', args:1, argName:'verbose', "verbose output",
-      required: false)
+          required: false)
     cli.o(longOpt:'out', args:1, argName:'output', 'output directory',
-      required: true)
+          required: true)
     OptionAccessor options = cli.parse(args)
     return options
 } // handleArgs
