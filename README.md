@@ -36,7 +36,8 @@ The image contains an example: simulated reads from a single cA01&tilde;tA01 hap
 The input is a folder containing fasta files (usually contigs) to be annotated. Each file may contain more than one sequence. The files cannot be gzipped.<br>
 <br>
 <b>Output</b><br>
-For each fasta input file, an annotation file (annotation.txt) will be created to annotate the higher-level structure. For each locus, feature tables (ft.txt) and a genotype list (gl.txt) are created to annotate the alleles.<br>
+For each gene, feature tables (ft.txt) and a features sequences (features.fasta) are created to annotate the alleles. The feature table contains the gene and intron/exon locations for each contig in GenBank update format. The features.fasta files extract the alleles from the contigs and group them into their genes.<br><br>
+For more information, an annotation file (annotation.txt) will be created to annotate the gene locations in each contig. Ideally the annotation only contains gene names, as opposed to markup. Markup means that part of the assembly didn't match the markup for any full gene. The markup.txt files have more information about the locations of the probes in the contigs and the key to converting the probe pairs into motif characters.<br>
 <br>
 <b>Running</b><br>
 Use the 'raw' parameter to indicate the input directory, and 'output' to indicate the directory to put the output. Use 'refFasta' to indicate the name of the reference fasta file that is located in the input directory. Use 'threadNum' to optionally set maximum number of threads to use (default 8).
