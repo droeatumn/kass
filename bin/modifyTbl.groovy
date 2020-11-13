@@ -48,9 +48,9 @@ void loadTbl(tReader, PrintWriter writer) {
             err.println "loadTbl: l2Split size=${l2Split.size()}"
             err.println "loadTbl: att=${att}"
         }
-        if(l1Split[0].startsWith(">Feature")) { // e.g., >Feature gb|MN167504_3DL2_160218-171148|
+        if(l1Split[0].startsWith(">Feature")) { // e.g., >Feature |MN167504_3DL2_160218-171148|
             (f, name) = l1Split[0].split(' ')
-            l1Split[0] = f + " gb|" + name + "|"
+            l1Split[0] = f + " |" + name + "|"
         }
         if((l2SplitSize > 3) && att.contains("partial")) {
             partial = true

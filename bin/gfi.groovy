@@ -365,8 +365,8 @@ def void output(DNASequence dnaSeq, String gene, String allele,
         partialStr = " (partial)"
     }
     
-    // feature header; e.g., >Feature gb|MN167504|
-    writer.println ">Feature gb|${dnaSeq.getOriginalHeader()}|"
+    // feature header; e.g., >Feature |MN167504|
+    writer.println ">Feature ${dnaSeq.getOriginalHeader()}|"
 
     // get start and end of gene
     Integer geneStart = null

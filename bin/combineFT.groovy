@@ -34,7 +34,6 @@ ArrayList<Integer> positions = idPosFtTable.columnKeySet().sort()
 if(debugging <= 3) {
 	err.println "${ids.size()} ids: ${ids.join(',')}"
     err.println "${positions.size()} positions: ${positions.join(',')}"
-    //err.println idPosFtTable.get("gb|GU182339", 78575)//todo
 }
 ids.each { i ->
     String featuresFull = new String()
@@ -45,9 +44,8 @@ ids.each { i ->
         }
     }
     outName = i
-//    outName = i.replaceFirst(/gb\\|/, "")
     PrintWriter writer = new PrintWriter(new File("${outName}.ft.txt").newOutputStream(), true)
-    writer.println ">Feature ${i}|"  // e.g., >Feature gb|MN167504|
+    writer.println ">Feature ${i}"  // e.g., >Feature MN167504
     writer.println featuresFull
     writer.close()
 } // each contig
