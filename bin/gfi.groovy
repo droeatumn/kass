@@ -47,7 +47,7 @@ import com.google.common.collect.HashBasedTable
 debugging = 3 // TRACE=1, WARN=2, DEBUG=3, INFO=4, ERROR=5
 @Field final Integer maxFeatureDistance = 11000 // MN167504 3DL3
 @Field final Integer maxJointEditDistance = 3
-@Field final String NOMEN_VER = "IPD-KIR 2.9.0"
+@Field final String NOMEN_VER = "IPD-KIR 2.10.0"
 @Field final String NEW_ALLELE = "NEW"
 
 pseudoVerbose = false // output exons for pseudogenes
