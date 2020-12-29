@@ -74,6 +74,6 @@ More of each helps, especially with WGS.
 Run time is 1-2 hours per ID, depending on platform, genotype variation, and parallel execution.
 <br><br>
 <b>Allele annotation</b><br>
-Full-gene alleles are annotated with respect to the IPD database version 2.9.0 (http://www.ebi.ac.uk/ipd/kir).<br>
+Full-gene alleles are annotated with respect to the IPD database version 2.10.0 (http://www.ebi.ac.uk/ipd/kir).<br>
 Robinson J, Halliwell JA, Hayhurst JH, Flicek P, Parham P, Marsh SGE: The IPD and IPD-IMGT/HLA Database: allele variant databases Nucleic Acids Research (2015), 43:D423-431<br>
 Robinson J, Malik A, Parham P, Bodmer JG, Marsh SGE: IMGT/HLA - a sequence database for the human major histocompatibility complex Tissue Antigens (2000), 55:280-287
