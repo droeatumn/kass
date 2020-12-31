@@ -11,7 +11,7 @@ ENV TMPDIR /tmp
 RUN apt-get update && apt-get install -qyy curl git make vim cmake \
     gcc g++ unzip maven subversion gzip openjdk-8-jdk groovy wget \
     zlib1g-dev gnuplot lynx libncurses5-dev libncursesw5-dev libbz2-dev \
-    liblzma-dev python python3-pip python-setuptools cython3 tabix bwa  \
+    liblzma-dev python python3-pip python-setuptools tabix bwa  \
   && apt-get clean 
 
 # install stuff
@@ -47,7 +47,7 @@ RUN cd /opt  && mkdir -p /opt/bin \
   && bunzip2 minimap2-2.17_x64-linux.tar.bz2 \
   && tar -xvf minimap2-2.17_x64-linux.tar
 
-RUN pip3 install --upgrade NanoPlot
+RUN pip3 install numpy cython NanoPlot
 
 # google guava
 RUN cd /opt \
