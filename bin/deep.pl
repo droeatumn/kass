@@ -111,7 +111,7 @@ sub build_hash
     my %exclude_hash;
     foreach my $exclusion_glob (split (/\s/, $exclude_pattern))
     {
-	foreach my $file (File::Glob::glob ("$dir/$exclusion_glob"))
+	foreach my $file (File::Glob::bsd_glob ("$dir/$exclusion_glob"))
 	{
 	    # We want to keep note both of the file with directory on the front, and the filename by itself
 	    $exclude_hash{$file} = 1;
@@ -167,7 +167,7 @@ sub traverse
     foreach my $glob (@patterns)
     {
 	# Iterate through the resulting list of files
-	foreach my $file (File::Glob::glob ("$dir/$glob"))
+	foreach my $file (File::Glob::bsd_glob ("$dir/$glob"))
 	{
 	    # Skip directories if $process_dirs is not set
 	    my $exists  = -e $file;
