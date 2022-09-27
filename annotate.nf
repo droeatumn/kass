@@ -54,7 +54,7 @@ process orient {
     set s, file(r) from readTap
     path(markerFile)
   output:
-    tuple s, path{"${s}*-orient.fasta"} into orientedFasta
+    tuple s, file{"${s}*-orient.fasta"} into orientedFasta
   script:
     def rootName = r.name.replaceFirst(".gz", "")
     def gzFlag = ""  // tell bowtie it is a fasta or fastq
@@ -133,8 +133,8 @@ process structure {
     # annotate the markup with the genes
     ./${annotateFile} -i ${featuresFile} -f ${r} -m ${bamName}_markup.txt -o . 2> ${bamName}_annotation_err.txt
     echo "done"
-    deep.pl replace '2DL4~3DL2' '2DL4~3DL1L2' '*features.fasta'
-    deep.pl replace '2DL4~3DL2' '2DL4~3DL1S1' '*_annotation.txt'
+    deep.pl replace '2DL4~3DL2' '2DL4~3DL1L2' '*features.fasta' || TRUE
+    deep.pl replace '2DL4~3DL2' '2DL4~3DL1S1' '*_annotation.txt' || TRUE
     cut -f2 ${bamName}_annotation.txt | sort | uniq -c > ${bamName}_annotation_strings.txt
 
     """
