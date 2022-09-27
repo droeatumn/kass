@@ -66,6 +66,10 @@ e.g.,
 Some references and their indexes are bundled in input/references/. 
 KP420439 and KP420442 are cA01&tilde;tA01. KP420440 is cB01&tilde;tB01. They each have a bed file that documents the locations of the genes.
 
+<h2>Citation</h2>
+Roe D. Efficient Sequencing, Assembly, and Annotation of Human KIR Haplotypes. Frontiers in Immunology (2020) 11:11 (https://doi.org/10.3389/fimmu.2020.582927)
+<br>
+  
 <h2>Miscellaneous</h2>
 <b>Hardware</b><br>
 Minimum recommended hardware for targeted sequencing is 30G memory and 8 CPU
