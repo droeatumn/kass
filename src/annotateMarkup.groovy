@@ -1,4 +1,5 @@
-#!/usr/bin/env groovy
+#!//usr/local/sdkman/candidates/groovy/current/bin/groovy
+//#!/usr/bin/env groovy
 
 /*
  * annotateMarkup
@@ -52,14 +53,14 @@
  */
 
 import groovy.io.*
-import groovy.util.CliBuilder.*
-import groovy.util.OptionAccessor
+import groovy.cli.commons.CliBuilder
+import groovy.cli.commons.OptionAccessor
 import java.util.regex.*
 import com.google.common.collect.Table
 import com.google.common.collect.HashBasedTable
 
 // things that may change per run
-debugging = 3 // TRACE=1, DEBUG=2, INFO=3
+debugging = 1 // TRACE=1, DEBUG=2, INFO=3
 
 // thing that probably won't change per run
 err = System.err

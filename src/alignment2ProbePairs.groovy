@@ -1,4 +1,5 @@
-#!/usr/bin/env groovy
+#!//usr/local/sdkman/candidates/groovy/current/bin/groovy
+//#!/usr/bin/env groovy
 
 /*
  * alignment2ProbePairs
@@ -14,6 +15,7 @@
  * e.g., alignment2ProbePairs.groovy -d . -o 15_markerHap_v1.txt
  * 
  * Requires
+ *  commons-cli export CLASSPATH=$GROOVY_HOME/lib/groovy-cli-commons-4.0.1.jar:$CLASSPATH
  *  guava.jar: https://github.com/google/guava
  *    http://google.github.io/guava/releases/19.0/api/docs/com/google/common/collect/Table.html
  *
@@ -27,8 +29,8 @@
  */
 
 import groovy.io.*
-import groovy.util.CliBuilder.*
-import groovy.util.OptionAccessor
+import groovy.util.*
+import groovy.cli.commons.*
 import com.google.common.collect.Table
 import com.google.common.collect.HashBasedTable
 
