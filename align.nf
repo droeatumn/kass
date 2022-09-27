@@ -3,7 +3,7 @@
 /*
  * Aligns fasta/fastq files to a reference and reports on the alignments and raw fastq file.
  *
- * Uses bowtie for alignment.
+ * Uses bwa mem for alignment.
  * Generates QualiMap and Nanoplot reports for alignments.
  * Generates FastQC reports for fastq files.
  *
@@ -22,11 +22,10 @@ params.reference = ""
 // for raw fastq, use --bwa "-xpacbio" (todo: how to run on command line?)
 // for exact haplotype references, use this
 // but be aware: susceptible to soft clipping
-params.bwa = "-k1800 -W9000 -r10 -A1 -B100 -O40 -E40 -L50"
-// for inexact haplotype references, use this
-//params.bwa = "-k800 -W2000 -r10 -B50 -O20 -E20 -L40"
-params.bowtie = "--end-to-end -N0"
+// params.bwa = "-k1800 -W9000 -r10 -A1 -B100 -O40 -E40 -L50"
+// for inexact haplotype references, can start with this or just leave all default
 params.threads = "7"
+params.minimap = "minimap2 -Y -B 77 -O 25 -E 25 -a -N 2 -t ${params.threads} -x map-pb "
 params.container = "droeatumn/kass:latest"
 params.nocontainer = "null"
 
@@ -78,8 +77,7 @@ process align {
     cd ..
 
     # alignment  
-    # bowtie2 ${params.bowtie} --threads ${params.threads} -x bowtie_indexes/${refName}_index ${fastaFlag} ${r} -S ${outName}.sam --un ${outName}_unaligned.txt 2> ${outName}_err.txt
-    bwa mem ${params.bwa} -t${params.threads} ${ref} ${r} > ${outName}.sam 2> ${outName}_err.txt
+    ${params.minimap} ${ref} ${r} > ${outName}.sam 2> ${outName}_err.txt
     samtools view -h -O SAM -f 4 ${outName}.sam > ${outName}_unaligned.sam
     samtools view -h -O SAM -F 0x04 ${outName}.sam > ${outName}_aligned.sam
     samtools view -h -O BAM ${outName}_aligned.sam > ${outName}.bam
