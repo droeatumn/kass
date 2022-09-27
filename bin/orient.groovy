@@ -1,4 +1,5 @@
-#!/usr/bin/env groovy
+#!//usr/local/sdkman/candidates/groovy/current/bin/groovy
+//todo #!/usr/bin/env groovy
 /*
  * Orient sequences in a fasta.
  *
@@ -16,6 +17,8 @@
 import org.biojava.nbio.core.sequence.*
 import org.biojava.nbio.core.sequence.io.*
 import org.biojava.nbio.core.sequence.compound.*
+import groovy.cli.commons.OptionAccessor
+import groovy.cli.commons.CliBuilder
 
 // things that may change per run
 debugging = 3 // TRACE=1, WARN=2, DEBUG=3, INFO=4, ERROR=5
@@ -52,9 +55,12 @@ descSeqMap.each { desc, dnaSeq ->
 } // each sequence in the fasta
 
 FastaWriterHelper.writeNucleotideSequence(new File(options.o), descSeqMap.values())
+
 /*writer = new FastaWriterHelper(new File(options.o), descSeqMap.values(),
                                new GenericFastaHeaderFormat(), 1000000)
 writer.process()*/
+
+// end main
 
 /*
  * checkOrientation

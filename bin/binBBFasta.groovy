@@ -1,4 +1,5 @@
-#!/usr/bin/env groovy
+#!//usr/local/sdkman/candidates/groovy/current/bin/groovy
+//#!/usr/bin/env groovy
 
 /*
  * binBBFasta
@@ -13,8 +14,8 @@
  */
 
 import groovy.io.*
-import groovy.util.CliBuilder.*
-import groovy.util.OptionAccessor
+import groovy.cli.commons.OptionAccessor
+import groovy.cli.commons.CliBuilder
 
 // things that may change per run
 debugging = 1 // TRACE=1, DEBUG=2, INFO=3

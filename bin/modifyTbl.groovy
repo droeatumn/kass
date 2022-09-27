@@ -1,4 +1,5 @@
-#!/usr/bin/env groovy
+#!//usr/local/sdkman/candidates/groovy/current/bin/groovy
+//#!/usr/bin/env groovy
 /*
  * Make some modifications to the table (tbl) file.
  *
@@ -6,8 +7,8 @@
  * @todo add "<" and ">" for partial; requires a refactor to process by section
  */
 import groovy.io.*
-import groovy.util.CliBuilder.*
-import groovy.util.OptionAccessor
+import groovy.cli.commons.OptionAccessor
+import groovy.cli.commons.CliBuilder
 import groovy.transform.Field
 import com.google.common.collect.Table
 import com.google.common.collect.HashBasedTable

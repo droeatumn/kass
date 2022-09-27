@@ -1,4 +1,5 @@
-#!/usr/bin/env groovy
+#!//usr/local/sdkman/candidates/groovy/current/bin/groovy
+//#!/usr/bin/env groovy
 /*
  * Combine multi-contig, multi-gene feature table files into one per contig.
  *
@@ -8,14 +9,14 @@
  * @todo skip non-feature stuff like source, misc_feature, etc
  */
 import groovy.io.*
-import groovy.util.CliBuilder.*
-import groovy.util.OptionAccessor
+import groovy.cli.commons.OptionAccessor
+import groovy.cli.commons.CliBuilder
 import groovy.transform.Field
 import com.google.common.collect.Table
 import com.google.common.collect.HashBasedTable
 
 // things that may change per run
-debugging = 3 // TRACE=1, DEBUG=2, INFO=3
+debugging = 5 // TRACE=1, DEBUG=2, INFO=3
 
 // thing that probably won't change per run
 err = System.err
@@ -44,6 +45,11 @@ ids.each { i ->
         }
     }
     outName = i
+    if(debugging <= 3) {
+        err.println "${id}"
+        err.println "writing to ${outName}.ft.txt"
+    }
+
     PrintWriter writer = new PrintWriter(new File("${outName}.ft.txt").newOutputStream(), true)
     writer.println ">Feature ${i}"  // e.g., >Feature MN167504
     writer.println featuresFull

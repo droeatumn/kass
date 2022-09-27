@@ -1,4 +1,5 @@
-#!/usr/bin/env groovy
+#!//usr/local/sdkman/candidates/groovy/current/bin/groovy
+//#!/usr/bin/env groovy
 /*
  * Gene Feature Interpretation
  *
@@ -40,11 +41,13 @@ import org.biojava.nbio.core.sequence.template.Sequence
 import org.biojava.nbio.core.sequence.transcription.*
 
 import groovy.transform.Field
+import groovy.cli.commons.OptionAccessor
+import groovy.cli.commons.CliBuilder
 import com.google.common.collect.Table
 import com.google.common.collect.HashBasedTable
 
 // things that may change per run
-debugging = 3 // TRACE=1, WARN=2, DEBUG=3, INFO=4, ERROR=5
+debugging = 5 // TRACE=1, WARN=2, DEBUG=3, INFO=4, ERROR=5
 @Field final Integer maxFeatureDistance = 11000 // MN167504 3DL3
 @Field final Integer maxJointEditDistance = 3
 @Field final String NOMEN_VER = "IPD-KIR 2.10.0"
