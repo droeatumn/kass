@@ -43,6 +43,7 @@ parentReader =
 	new FastaReader<DNASequence, NucleotideCompound>(new File(options.i), new PlainFastaHeaderParser<DNASequence, NucleotideCompound>(), ambigDNA)
 LinkedHashMap<String, DNASequence> descSeqMapNew = new LinkedHashMap()
 
+outf = new File(options.o)
 
 while((descSeqMap = parentReader.process(1)) != null) {
 	if(debugging <= 3) {  
@@ -53,21 +54,17 @@ while((descSeqMap = parentReader.process(1)) != null) {
 	    if(reverseIt) {
 	        dnaSeqNew = new DNASequence(dnaSeq.getReverseComplement().getSequenceAsString())
 	        dnaSeqNew.setOriginalHeader(dnaSeq.getOriginalHeader())
-	        descSeqMapNew[desc] = dnaSeqNew
-	        descSeqMap[desc] = null
+	        descSeqMap[desc] = dnaSeqNew
 	    }
 		if(debugging <= 1) {
 	    	err.println "${desc} end"
 		}
-		desc = null
-		dnaSeq = null
+
 	} // each sequence in the fasta
+    FastaWriterHelper.writeNucleotideSequence(outf, descSeqMap.values())
 }
 
-descSeqMap.putAll(descSeqMapNew)
-descSeqMapNew = null
-
-FastaWriterHelper.writeNucleotideSequence(new File(options.o), descSeqMap.values())
+outf.close()
 
 /*writer = new FastaWriterHelper(new File(options.o), descSeqMap.values(),
                                new GenericFastaHeaderFormat(), 1000000)
