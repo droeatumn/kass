@@ -31,28 +31,41 @@ OptionAccessor options = handleArgs(args)
 
 ambigDNA = new DNASequenceCreator(AmbiguityDNACompoundSet.getDNACompoundSet())
 
-// descSeqMap: description -> DNASequence
-FastaReader<DNASequence, NucleotideCompound> parentReader = new FastaReader<DNASequence, NucleotideCompound>(new File(options.i), new PlainFastaHeaderParser<DNASequence, NucleotideCompound>(), ambigDNA)
-LinkedHashMap<String, DNASequence> descSeqMap = parentReader.process()
-if(debugging <= 3) { 
-    err.println "${descSeqMap.keySet().size()} input descriptions: " + descSeqMap.keySet().join(",")
-}
-
 // probeSeqMap: description -> DNASequence
 parentReader = new FastaReader<DNASequence, NucleotideCompound>(new File(options.p), new PlainFastaHeaderParser<DNASequence, NucleotideCompound>(), ambigDNA)
 LinkedHashMap<String, DNASequence> probeSeqMap = parentReader.process()
-if(debugging <= 3) { 
+if(debugging <= 3) {
     err.println "${probeSeqMap.keySet().size()} probe descriptions"
 }
 
-descSeqMap.each { desc, dnaSeq ->
-    reverseIt = checkOrientation(dnaSeq, probeSeqMap)
-    if(reverseIt) {
-        dnaSeqNew = new DNASequence(dnaSeq.getReverseComplement().getSequenceAsString())
-        dnaSeqNew.setOriginalHeader(dnaSeq.getOriginalHeader())
-        descSeqMap[desc] = dnaSeqNew
-    }
-} // each sequence in the fasta
+// descSeqMap: description -> DNASequence
+parentReader = 
+	new FastaReader<DNASequence, NucleotideCompound>(new File(options.i), new PlainFastaHeaderParser<DNASequence, NucleotideCompound>(), ambigDNA)
+LinkedHashMap<String, DNASequence> descSeqMapNew = new LinkedHashMap()
+
+
+while((descSeqMap = parentReader.process(1)) != null) {
+	if(debugging <= 3) {  
+	    err.println "${descSeqMap.keySet().size()} input descriptions: " + descSeqMap.keySet().join(",")
+	}
+	descSeqMap.each { desc, dnaSeq ->
+	    reverseIt = checkOrientation(dnaSeq, probeSeqMap)
+	    if(reverseIt) {
+	        dnaSeqNew = new DNASequence(dnaSeq.getReverseComplement().getSequenceAsString())
+	        dnaSeqNew.setOriginalHeader(dnaSeq.getOriginalHeader())
+	        descSeqMapNew[desc] = dnaSeqNew
+	        descSeqMap[desc] = null
+	    }
+		if(debugging <= 1) {
+	    	err.println "${desc} end"
+		}
+		desc = null
+		dnaSeq = null
+	} // each sequence in the fasta
+}
+
+descSeqMap.putAll(descSeqMapNew)
+descSeqMapNew = null
 
 FastaWriterHelper.writeNucleotideSequence(new File(options.o), descSeqMap.values())
 
@@ -67,22 +80,27 @@ writer.process()*/
  */
 Boolean checkOrientation(DNASequence seq,
                          LinkedHashMap<String, DNASequence> probeSeqMap) {
+	if(debugging <= 1) {
+	    err.println "checkOrientation()"
+	}
     Boolean ret = false
     for(s in probeSeqMap) {
         String desc = s.key
         DNASequence probeSeq = s.value
 
         probeStr = probeSeq.getSequenceAsString()
-        seqStr = seq.getSequenceAsString()
 
-        if(seqStr.contains(probeStr)) {
+        if(seq.getSequenceAsString().contains(probeStr)) {
             break
-        } else if(seqStr.contains(probeSeq.getReverseComplement().getSequenceAsString())) {
+        } else if(seq.getSequenceAsString().contains(probeSeq.getReverseComplement().getSequenceAsString())) {
             ret = true
             break
         }
     } // each probe
 
+	if(debugging <= 1) {
+	    err.println "checkOrientation: return"
+	}
     return ret
 } // checkOrientation
 
