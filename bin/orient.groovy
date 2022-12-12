@@ -43,7 +43,7 @@ parentReader =
 	new FastaReader<DNASequence, NucleotideCompound>(new File(options.i), new PlainFastaHeaderParser<DNASequence, NucleotideCompound>(), ambigDNA)
 LinkedHashMap<String, DNASequence> descSeqMapNew = new LinkedHashMap()
 
-outf = new File(options.o)
+outf = new FileOutputStream(new File(options.o))
 
 while((descSeqMap = parentReader.process(1)) != null) {
 	if(debugging <= 3) {  
