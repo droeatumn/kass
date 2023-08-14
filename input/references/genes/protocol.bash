@@ -1,6 +1,7 @@
 #!/bin/bash
 # To create KIR2DP1_prot.fasta and KIR3DP1_prot.fasta, load the _gen.msf
-# files into Aliview. Then File -> Save as Translated alignment (Amino Acid).
+# files into a protein translation tools (e.g.,
+# https://www.bioinformatics.org/sms2/translate.html). 
 #
 
 FASTA_DIR=$HOME/git/IPDKIR/fasta/

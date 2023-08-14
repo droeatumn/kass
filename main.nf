@@ -1,5 +1,7 @@
 #!/usr/bin/env nextflow
 
+// todo directions say can input mult files, but that's not right
+// todo add threads to lorma and bbduk (auto isn't right)
 /*
  * Assemble KIR.
  * 
