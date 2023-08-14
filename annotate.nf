@@ -1,6 +1,5 @@
 #! /usr/bin/env nextflow
-nextflow.enable.dsl=2
-// todo hangs on KP420444.fasta
+
 /*
  * Annotates strings in fasta files.
  * 
@@ -37,10 +36,8 @@ if(params.sbt == null) {
 
 raw = "${params.raw}/*{fasta,fa,fasta.gz,fa.gz}"
 reads = Channel.fromPath(raw).ifEmpty { error "cannot find any reads matching ${raw}" }.map { path -> tuple(sample(path), path) }
-annotateReads = Channel.fromPath(annotateFile)
-//readTap = reads.tap(annotateReads).filter{ it[1] != params.sbt }
-//readTap = reads.tap(annotateReads)
-readTap = annotateReads
+annotateReads = Channel.create()
+readTap = reads.tap(annotateReads).filter{ it[1] != params.sbt }
 
 /* 
  * Use the capture probes to orient the input sequences.
